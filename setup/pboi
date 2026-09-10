@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "$EUID" -eq 0 ]]; then
+    echo "Do not run pboi with sudo or as root." >&2
+    echo "Run pboi as your normal desktop user so it updates that user's Personaboi files." >&2
+    exit 1
+fi
+
 REPO_URL="https://github.com/tariqaq/Personaboi-Quickshell.git"
 BRANCH="main"
 TARGET_QS="$HOME/.config/quickshell/persona"
