@@ -9,7 +9,7 @@ check_cmd() {
   if command -v "$1" >/dev/null 2>&1; then pass "$1 -> $(command -v "$1")"; else fail "$1 not found"; fi
 }
 
-for cmd in Hyprland start-hyprland hyprctl qs wpctl brightnessctl playerctl wl-copy grim slurp kitty dolphin nm-applet blueman-applet; do
+for cmd in Hyprland start-hyprland hyprctl qs wpctl brightnessctl playerctl wl-copy grim slurp kitty nautilus nm-applet blueman-applet; do
   check_cmd "$cmd"
 done
 
