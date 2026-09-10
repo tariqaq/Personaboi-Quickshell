@@ -23,7 +23,7 @@ printf '\n[1/7] Enabling Ubuntu Universe and installing Hyprland/runtime package
 sudo add-apt-repository -y universe
 sudo apt update
 sudo apt install -y \
-  hyprland xdg-desktop-portal-hyprland \
+  hyprland xdg-desktop-portal-hyprland hyprland-qtutils \
   git curl wget unzip rsync build-essential cmake \
   kitty dolphin \
   brightnessctl playerctl wl-clipboard grim slurp pavucontrol \
