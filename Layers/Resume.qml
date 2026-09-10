@@ -1,17 +1,22 @@
 import QtQuick
 import QtMultimedia
+import QtQuick.Controls
 import Quickshell
 import Quickshell.Wayland
-import qs.Data as Dat
 import qs.Widgets as Wid
 import qs.Widgets.Info as Info
-import QtQuick.Controls
 
 Scope {
     id: root
     property bool shouldShow: false
     property var targetScreen: null
     property bool contentVisible: false
+
+    function compact(text, maxLen) {
+        var s = text === undefined || text === null || text === "" ? "N/A" : String(text);
+        return s.length > maxLen ? s.slice(0, maxLen - 1) + "…" : s;
+    }
+
     Connections {
         target: root
         function onShouldShowChanged() {
@@ -20,9 +25,9 @@ Scope {
                 Info.NetInfo.scanNetworks();
         }
     }
-    Wid.P3rTransition {
-        id: resumeTransition
-    }
+
+    Wid.P3rTransition { id: resumeTransition }
+
     LazyLoader {
         active: true
         PanelWindow {
@@ -33,12 +38,8 @@ Scope {
             WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
             WlrLayershell.keyboardFocus: visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-            anchors {
-                left: true
-                right: true
-                top: true
-                bottom: true
-            }
+            anchors { left: true; right: true; top: true; bottom: true }
+
             onVisibleChanged: {
                 if (visible) {
                     contentVisible = false;
@@ -50,6 +51,7 @@ Scope {
                     contentVisible = false;
                 }
             }
+
             Video {
                 id: resumeVideo
                 anchors.fill: parent
@@ -59,6 +61,7 @@ Scope {
                 volume: 0
                 z: 0
             }
+
             Timer {
                 id: contentDelayTimer
                 interval: 730
@@ -66,26 +69,23 @@ Scope {
                 onTriggered: {
                     resumeVideo.play();
                     contentVisible = true;
-                    Qt.callLater(() => {
-                        panelBg.requestPaint();
-                        detailHeader.requestPaint();
-                    });
                 }
             }
+
             Item {
                 id: contentRoot
                 anchors.fill: parent
                 z: 3
                 visible: root.contentVisible
                 property int activeCard: 0
+
                 Column {
-                    anchors {
-                        left: parent.left
-                        leftMargin: parent.width * 0.028
-                        top: parent.top
-                        topMargin: parent.height * 0.09
-                    }
+                    anchors.left: parent.left
+                    anchors.leftMargin: parent.width * 0.028
+                    anchors.top: parent.top
+                    anchors.topMargin: parent.height * 0.09
                     spacing: 10
+
                     Text {
                         text: "LIST"
                         font.family: "proggyfonts"
@@ -93,28 +93,15 @@ Scope {
                         color: "#f6fbff"
                         leftPadding: 12
                     }
+
                     Repeater {
                         model: [
-                            {
-                                badge: "I",
-                                title: "Stats",
-                                subtitle: "System Stats and Info",
-                                rank: 3
-                            },
-                            {
-                                badge: "II",
-                                title: "Network",
-                                subtitle: "Wifi Networks and connections",
-                                rank: 4
-                            },
-                            {
-                                badge: "III",
-                                title: "Bluetooth",
-                                subtitle: "Bluetooth Devices",
-                                rank: 5
-                            },
+                            { badge: "I", title: "Stats", subtitle: "System telemetry and health", rank: 3 },
+                            { badge: "II", title: "Network", subtitle: "Wi-Fi networks and connections", rank: 4 },
+                            { badge: "III", title: "Bluetooth", subtitle: "Bluetooth devices", rank: 5 }
                         ]
-                        Item {
+
+                        delegate: Item {
                             id: cardWrap
                             required property var modelData
                             required property int index
@@ -123,57 +110,15 @@ Scope {
                             x: isActive ? 6 : 0
                             property bool isActive: contentRoot.activeCard === index
 
-                            Behavior on height {
-                                NumberAnimation {
-                                    duration: 300
-                                    easing.type: Easing.OutCubic
-                                }
-                            }
-                            Behavior on x {
-                                NumberAnimation {
-                                    duration: 250
-                                    easing.type: Easing.OutCubic
-                                }
-                            }
+                            Behavior on height { NumberAnimation { duration: 300; easing.type: Easing.OutCubic } }
+                            Behavior on x { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
 
-                            Canvas {
-                                id: cardCanvas
+                            Rectangle {
                                 anchors.fill: parent
-                                onPaint: {
-                                    var ctx = getContext("2d");
-                                    ctx.clearRect(0, 0, width, height);
-                                    ctx.beginPath();
-                                    ctx.moveTo(0, 0);
-                                    ctx.lineTo(width * 0.97, 0);
-                                    ctx.lineTo(width, height);
-                                    ctx.lineTo(width * 0.03, height);
-                                    ctx.closePath();
-                                    ctx.fillStyle = cardWrap.isActive ? "#8df6ff" : "#10185f";
-                                    ctx.fill();
-                                    ctx.beginPath();
-                                    ctx.moveTo(width * 0.03, height);
-                                    ctx.lineTo(width, height);
-                                    ctx.lineTo(width + 10, height + 8);
-                                    ctx.lineTo(width * 0.03 + 10, height + 8);
-                                    ctx.closePath();
-                                    ctx.fillStyle = cardWrap.isActive ? "#cccccc" : "rgba(5,13,59,0.85)";
-                                    ctx.fill();
-                                }
-                                onWidthChanged: requestPaint()
-                                onHeightChanged: requestPaint()
-                                Connections {
-                                    target: cardWrap
-                                    function onIsActiveChanged() {
-                                        cardCanvas.requestPaint();
-                                    }
-                                }
-                                Connections {
-                                    target: root
-                                    function onContentVisibleChanged() {
-                                        if (root.contentVisible)
-                                            cardCanvas.requestPaint();
-                                    }
-                                }
+                                color: cardWrap.isActive ? "#8df6ff" : "#10185f"
+                                border.color: cardWrap.isActive ? "#eaffff" : "#213ca0"
+                                border.width: 2
+                                transform: Shear { xAngle: -3 }
                             }
 
                             Rectangle {
@@ -196,12 +141,10 @@ Scope {
                             }
 
                             Text {
-                                anchors {
-                                    left: parent.left
-                                    leftMargin: 62
-                                    top: parent.top
-                                    topMargin: 14
-                                }
+                                anchors.left: parent.left
+                                anchors.leftMargin: 62
+                                anchors.top: parent.top
+                                anchors.topMargin: 14
                                 text: cardWrap.modelData.title
                                 font.family: "Montserrat"
                                 font.pixelSize: 48
@@ -209,70 +152,27 @@ Scope {
                             }
 
                             Row {
-                                anchors {
-                                    right: parent.right
-                                    rightMargin: 20
-                                    top: parent.top
-                                    topMargin: 10
-                                }
+                                anchors.right: parent.right
+                                anchors.rightMargin: 20
+                                anchors.top: parent.top
+                                anchors.topMargin: 10
                                 spacing: 8
-                                Text {
-                                    text: "RANK"
-                                    font.family: "Montserrat"
-                                    font.pixelSize: 22
-                                    color: cardWrap.isActive ? "#000" : "#9ffbff"
-                                    anchors.bottom: parent.bottom
-                                    bottomPadding: 8
-                                }
-                                Text {
-                                    text: cardWrap.modelData.rank
-                                    font.family: "Montserrat"
-                                    font.pixelSize: 60
-                                    color: cardWrap.isActive ? "#000" : "#9ffbff"
-                                }
+                                Text { text: "RANK"; font.family: "Montserrat"; font.pixelSize: 22; color: cardWrap.isActive ? "#000" : "#9ffbff"; anchors.bottom: parent.bottom; bottomPadding: 8 }
+                                Text { text: cardWrap.modelData.rank; font.family: "Montserrat"; font.pixelSize: 60; color: cardWrap.isActive ? "#000" : "#9ffbff" }
                             }
 
-                            Canvas {
-                                id: subtitleCanvas
-                                anchors {
-                                    left: parent.left
-                                    leftMargin: 64
-                                    right: parent.right
-                                    rightMargin: 14
-                                    bottom: parent.bottom
-                                    bottomMargin: 12
-                                }
+                            Rectangle {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 64
+                                anchors.right: parent.right
+                                anchors.rightMargin: 14
+                                anchors.bottom: parent.bottom
+                                anchors.bottomMargin: 12
                                 height: 32
-                                onPaint: {
-                                    var ctx = getContext("2d");
-                                    ctx.clearRect(0, 0, width, height);
-                                    ctx.beginPath();
-                                    ctx.moveTo(0, 0);
-                                    ctx.lineTo(width, 0);
-                                    ctx.lineTo(width - 10, height);
-                                    ctx.lineTo(0, height);
-                                    ctx.closePath();
-                                    ctx.fillStyle = cardWrap.isActive ? "#000" : "#85f4ff";
-                                    ctx.fill();
-                                }
-                                Connections {
-                                    target: cardWrap
-                                    function onIsActiveChanged() {
-                                        subtitleCanvas.requestPaint();
-                                    }
-                                }
-                                Connections {
-                                    target: root
-                                    function onContentVisibleChanged() {
-                                        if (root.contentVisible)
-                                            subtitleCanvas.requestPaint();
-                                    }
-                                }
+                                color: cardWrap.isActive ? "#000" : "#85f4ff"
                                 Text {
-                                    anchors {
-                                        fill: parent
-                                        leftMargin: 14
-                                    }
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 14
                                     text: cardWrap.modelData.subtitle
                                     font.family: "Montserrat"
                                     font.pixelSize: 20
@@ -281,235 +181,135 @@ Scope {
                                 }
                             }
 
-                            HoverHandler {
-                                onHoveredChanged: {
-                                    if (hovered)
-                                        contentRoot.activeCard = cardWrap.index;
-                                }
-                            }
-                            TapHandler {
-                                onTapped: contentRoot.activeCard = cardWrap.index
-                            }
+                            HoverHandler { onHoveredChanged: { if (hovered) contentRoot.activeCard = cardWrap.index; } }
+                            TapHandler { onTapped: contentRoot.activeCard = cardWrap.index }
                         }
                     }
                 }
 
                 Rectangle {
                     id: detailPanel
-                    anchors {
-                        right: parent.right
-                        rightMargin: parent.width * 0.045
-                        top: parent.top
-                        topMargin: parent.height * 0.095
-                    }
-                    width: Math.min(parent.width * 0.39, 620)
-                    height: parent.height * 0.74
-                    color: "transparent"
+                    anchors.right: parent.right
+                    anchors.rightMargin: parent.width * 0.045
+                    anchors.top: parent.top
+                    anchors.topMargin: parent.height * 0.075
+                    width: Math.min(parent.width * 0.41, 660)
+                    height: parent.height * 0.82
+                    color: "#f30a1248"
+                    border.color: "#3260d0"
+                    border.width: 2
 
-                    Canvas {
-                        id: panelBg
-                        anchors.fill: parent
-                        Connections {
-                            target: root
-                            function onContentVisibleChanged() {
-                                if (root.contentVisible)
-                                    panelBg.requestPaint();
-                            }
-                        }
-                        onPaint: {
-                            var ctx = getContext("2d");
-                            ctx.clearRect(0, 0, width, height);
-                            ctx.beginPath();
-                            ctx.moveTo(0, 0);
-                            ctx.lineTo(width, 0);
-                            ctx.lineTo(width - 18, height);
-                            ctx.lineTo(0, height);
-                            ctx.closePath();
-                            var grad = ctx.createLinearGradient(0, 0, 0, height);
-                            grad.addColorStop(0, "rgba(15,28,105,0.96)");
-                            grad.addColorStop(1, "rgba(8,16,68,0.97)");
-                            ctx.fillStyle = grad;
-                            ctx.fill();
-                        }
-                    }
-
-                    Canvas {
+                    Rectangle {
                         id: detailHeader
-                        anchors {
-                            left: parent.left
-                            right: parent.right
-                            top: parent.top
-                        }
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
                         height: 92
-                        property string indexText: ["01", "02", "03"][detailPanel.parent.activeCard]
-                        property string titleText: ["System Stats", "Wifi networks", "Bluetooth devices"][detailPanel.parent.activeCard]
-                        onIndexTextChanged: requestPaint()
-                        Connections {
-                            target: root
-                            function onContentVisibleChanged() {
-                                if (root.contentVisible)
-                                    detailHeader.requestPaint();
-                            }
-                        }
-                        onPaint: {
-                            var ctx = getContext("2d");
-                            ctx.clearRect(0, 0, width, height);
-                            ctx.beginPath();
-                            ctx.moveTo(0, 0);
-                            ctx.lineTo(width, 0);
-                            ctx.lineTo(width - 16, height);
-                            ctx.lineTo(0, height);
-                            ctx.closePath();
-                            var grad = ctx.createLinearGradient(0, 0, width, 0);
-                            grad.addColorStop(0, "#8ef5ff");
-                            grad.addColorStop(1, "#d3fdff");
-                            ctx.fillStyle = grad;
-                            ctx.fill();
-                        }
+                        color: "#aaf8ff"
+
+                        property string indexText: ["01", "02", "03"][contentRoot.activeCard]
+                        property string titleText: ["System Stats", "Wifi networks", "Bluetooth devices"][contentRoot.activeCard]
+
                         Row {
-                            anchors {
-                                fill: parent
-                                leftMargin: 18
-                                rightMargin: 18
-                            }
+                            anchors.fill: parent
+                            anchors.leftMargin: 18
+                            anchors.rightMargin: 18
                             spacing: 14
-                            Text {
-                                text: detailHeader.indexText
-                                font.family: "Montserrat"
-                                font.pixelSize: 40
-                                color: "#08153f"
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-                            Text {
-                                text: detailHeader.titleText
-                                font.family: "Montserrat"
-                                font.pixelSize: 36
-                                color: "#08153f"
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
+                            Text { text: detailHeader.indexText; font.family: "Montserrat"; font.pixelSize: 40; color: "#08153f"; anchors.verticalCenter: parent.verticalCenter }
+                            Text { text: detailHeader.titleText; font.family: "Montserrat"; font.pixelSize: 34; color: "#08153f"; anchors.verticalCenter: parent.verticalCenter }
                         }
                     }
 
                     ScrollView {
-                        anchors {
-                            left: parent.left
-                            right: parent.right
-                            top: detailHeader.bottom
-                            bottom: parent.bottom
-                            topMargin: 18
-                        }
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: detailHeader.bottom
+                        anchors.bottom: parent.bottom
+                        anchors.topMargin: 14
+                        anchors.bottomMargin: 8
                         clip: true
 
                         Column {
                             id: innerCol
-                            width: detailPanel.width
-                            spacing: 10
+                            width: detailPanel.width - 12
+                            spacing: 8
 
                             Repeater {
                                 model: {
-                                    var ac = detailPanel.parent.activeCard;
-                                    var _ = Info.SysInfo.cpuUsage + Info.SysInfo.memUsage + Info.SysInfo.diskUsage;
-                                    return [[
-                                            {
-                                                title: "OS",
-                                                status: Info.SysInfo.osName
-                                            },
-                                            {
-                                                title: "CPU",
-                                                status: Math.round(Info.SysInfo.cpuUsage * 100) + "%"
-                                            },
-                                            {
-                                                title: "RAM",
-                                                status: Info.SysInfo.memText
-                                            },
-                                            {
-                                                title: "DISK",
-                                                status: Info.SysInfo.diskText
-                                            },
-                                            {
-                                                title: "Users",
-                                                status: Info.SysInfo.loggedInUsers
-                                            },
-                                        ], Info.NetInfo.networks.map((n, i) => ({
-                                                    title: n.ssid,
-                                                    status: n.active ? "Connected" : (n.strength + "%")
-                                                })), Info.BluetoothInfo.friendlyDeviceList.length === 0 ? [
-                                            {
-                                                title: Info.BluetoothInfo.available ? "Bluetooth Off" : "No Adapter",
-                                                status: Info.BluetoothInfo.enabled ? "No Devices" : "Disabled"
-                                            }
-                                        ] : Info.BluetoothInfo.friendlyDeviceList.map(d => ({
-                                                    title: d.name,
-                                                    status: d.connected ? "Connected" : (d.paired ? "Paired" : "Found")
-                                                })), [],][ac];
+                                    var ac = contentRoot.activeCard;
+                                    var _refresh = Info.SysInfo.cpuUsage + Info.SysInfo.memUsage + Info.SysInfo.diskUsage + Info.SysInfo.uptime + Info.SysInfo.gpuUtil + Info.SysInfo.processCount;
+                                    if (ac === 0) {
+                                        return [
+                                            { title: "OS", status: root.compact(Info.SysInfo.osName, 30) },
+                                            { title: "HOST", status: root.compact(Info.SysInfo.hostname, 24) },
+                                            { title: "KERNEL", status: root.compact(Info.SysInfo.kernel, 24) },
+                                            { title: "UPTIME", status: Info.SysInfo.uptime },
+                                            { title: "CPU", status: Math.round(Info.SysInfo.cpuUsage * 100) + "%" },
+                                            { title: "CPU MODEL", status: root.compact(Info.SysInfo.cpuModel, 24) },
+                                            { title: "LOGICAL CPUs", status: Info.SysInfo.cpuCores },
+                                            { title: "LOAD 1/5/15", status: Info.SysInfo.loadAverage },
+                                            { title: "RAM", status: Info.SysInfo.memText },
+                                            { title: "ROOT DISK", status: Info.SysInfo.diskText },
+                                            { title: "PROCESSES", status: Info.SysInfo.processCount },
+                                            { title: "GPU", status: root.compact(Info.SysInfo.gpuName, 28) },
+                                            { title: "GPU LOAD", status: Info.SysInfo.gpuUtil },
+                                            { title: "GPU VRAM", status: Info.SysInfo.gpuMemory },
+                                            { title: "GPU TEMP", status: Info.SysInfo.gpuTemp },
+                                            { title: "SESSIONS", status: Info.SysInfo.loggedInUsers }
+                                        ];
+                                    }
+                                    if (ac === 1) {
+                                        return Info.NetInfo.networks.length === 0 ? [{ title: "Wi-Fi", status: "No networks found" }] : Info.NetInfo.networks.map(n => ({
+                                            title: root.compact(n.ssid, 28),
+                                            status: n.active ? "Connected" : (n.strength + "%")
+                                        }));
+                                    }
+                                    return Info.BluetoothInfo.friendlyDeviceList.length === 0 ? [
+                                        { title: Info.BluetoothInfo.available ? "Bluetooth" : "Adapter", status: Info.BluetoothInfo.enabled ? "No Devices" : "Disabled" }
+                                    ] : Info.BluetoothInfo.friendlyDeviceList.map(d => ({
+                                        title: root.compact(d.name, 28),
+                                        status: d.connected ? "Connected" : (d.paired ? "Paired" : "Found")
+                                    }));
                                 }
 
-                                Item {
+                                delegate: Item {
                                     required property var modelData
-                                    width: detailPanel.width
-                                    height: 56
+                                    width: innerCol.width
+                                    height: 50
 
-                                    Rectangle {
-                                        anchors.fill: parent
-                                        color: Qt.rgba(8 / 255, 18 / 255, 72 / 255, 0.96)
-                                        radius: 2
+                                    Rectangle { anchors.fill: parent; color: "#f0081248"; border.color: "#20357f"; border.width: 1 }
+
+                                    Text {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 14
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: modelData.title
+                                        font.family: "Montserrat"
+                                        font.pixelSize: 18
+                                        color: "#f2fcff"
+                                        width: parent.width * 0.42
+                                        elide: Text.ElideRight
                                     }
 
-                                    Row {
-                                        anchors {
-                                            fill: parent
-                                            leftMargin: 14
-                                            rightMargin: 14
-                                        }
-                                        spacing: 14
-
+                                    Rectangle {
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 12
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: Math.min(parent.width * 0.53, statusText.implicitWidth + 26)
+                                        height: 32
+                                        color: "#8df6ff"
                                         Text {
-                                            text: modelData.title
+                                            id: statusText
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 10
+                                            anchors.rightMargin: 10
+                                            text: modelData.status
                                             font.family: "Montserrat"
-                                            font.pixelSize: 24
-                                            color: "#f2fcff"
-                                            anchors.verticalCenter: parent.verticalCenter
-                                        }
-                                        Item {
-                                            width: 1
-                                            height: 1
-                                        }
-                                        Item {
-                                            width: statusText.implicitWidth + 28
-                                            height: 34
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            Canvas {
-                                                id: statusCanvas
-                                                anchors.fill: parent
-                                                onWidthChanged: requestPaint()
-                                                Connections {
-                                                    target: root
-                                                    function onContentVisibleChanged() {
-                                                        if (root.contentVisible)
-                                                            statusCanvas.requestPaint();
-                                                    }
-                                                }
-                                                onPaint: {
-                                                    var ctx = getContext("2d");
-                                                    ctx.clearRect(0, 0, width, height);
-                                                    ctx.beginPath();
-                                                    ctx.moveTo(0, 0);
-                                                    ctx.lineTo(width, 0);
-                                                    ctx.lineTo(width - 8, height);
-                                                    ctx.lineTo(0, height);
-                                                    ctx.closePath();
-                                                    ctx.fillStyle = "#8df6ff";
-                                                    ctx.fill();
-                                                }
-                                            }
-                                            Text {
-                                                id: statusText
-                                                anchors.centerIn: parent
-                                                text: modelData.status
-                                                font.family: "Montserrat"
-                                                font.pixelSize: 16
-                                                color: "#06133b"
-                                            }
+                                            font.pixelSize: 14
+                                            color: "#06133b"
+                                            verticalAlignment: Text.AlignVCenter
+                                            horizontalAlignment: Text.AlignHCenter
+                                            elide: Text.ElideRight
                                         }
                                     }
                                 }
@@ -517,11 +317,8 @@ Scope {
                         }
                     }
                 }
-                MouseArea {
-                    anchors.fill: parent
-                    z: -1
-                    onClicked: root.shouldShow = false
-                }
+
+                MouseArea { anchors.fill: parent; z: -1; onClicked: root.shouldShow = false }
                 Keys.onPressed: event => {
                     if (event.key === Qt.Key_Escape) {
                         root.shouldShow = false;
