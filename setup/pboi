@@ -71,6 +71,11 @@ update_personaboi() {
         exit 0
     fi
 
+    if [[ -f "$tmpdir/repo/setup/update-hook.sh" ]]; then
+        echo "Running v$new_version update preparation..."
+        bash "$tmpdir/repo/setup/update-hook.sh"
+    fi
+
     mkdir -p "$STATE_DIR/backups" "$TARGET_HYPR" "$TARGET_ENV" "$HOME/.local/bin"
 
     local backup="$STATE_DIR/backups/previous"
