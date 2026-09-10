@@ -13,6 +13,12 @@ for cmd in Hyprland start-hyprland hyprctl qs wpctl brightnessctl playerctl wl-c
   check_cmd "$cmd"
 done
 
+if command -v pboi >/dev/null 2>&1; then
+  pass "pboi -> $(command -v pboi)"
+else
+  warn 'pboi not found in PATH (fresh installs may need one logout/login for ~/.local/bin)'
+fi
+
 if [[ -f "$HOME/.config/hypr/hyprland.conf" ]]; then
   Hyprland --verify-config && pass 'Hyprland config parses' || fail 'Hyprland config has errors'
 else
@@ -21,6 +27,8 @@ fi
 
 [[ -f "$HOME/.config/quickshell/persona/shell.qml" ]] && pass 'Persona shell.qml installed' || fail 'Persona shell.qml missing'
 [[ -f "$HOME/.config/quickshell/persona/Layers/Tray.qml" ]] && pass 'Custom tray installed' || fail 'Tray.qml missing'
+[[ -f "$HOME/.config/quickshell/persona/Layers/Workspaces.qml" ]] && pass 'Workspace tracker installed' || fail 'Workspaces.qml missing'
+[[ -f "$HOME/.config/quickshell/persona/VERSION" ]] && pass "Personaboi v$(tr -d '[:space:]' < "$HOME/.config/quickshell/persona/VERSION") installed" || warn 'VERSION marker missing'
 [[ -f "$HOME/.local/lib/qt6/qml/CavaMonitor/libcavamonitorplugin.so" ]] && pass 'CavaMonitor plugin installed' || fail 'CavaMonitor plugin missing'
 [[ -f /usr/local/lib/libcava.so ]] && pass 'libcava.so installed' || fail 'libcava.so missing'
 
