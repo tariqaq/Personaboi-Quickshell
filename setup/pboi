@@ -1,0 +1,179 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_URL="https://github.com/tariqaq/Personaboi-Quickshell.git"
+BRANCH="main"
+TARGET_QS="$HOME/.config/quickshell/persona"
+TARGET_HYPR="$HOME/.config/hypr"
+TARGET_ENV="$HOME/.config/environment.d"
+STATE_DIR="$HOME/.local/share/personaboi"
+STATE_COMMIT="$STATE_DIR/commit"
+STATE_VERSION="$STATE_DIR/version"
+CLI_TARGET="$HOME/.local/bin/pboi"
+
+print_version() {
+    local version="unknown"
+    if [[ -f "$TARGET_QS/VERSION" ]]; then
+        version="$(tr -d '[:space:]' < "$TARGET_QS/VERSION")"
+    elif [[ -f "$STATE_VERSION" ]]; then
+        version="$(tr -d '[:space:]' < "$STATE_VERSION")"
+    fi
+    printf 'Personaboi v%s\n' "$version"
+}
+
+show_help() {
+    cat <<'EOF'
+Personaboi updater
+
+Usage:
+  pboi update      Pull and apply the latest Personaboi setup
+  pboi version     Show the installed Personaboi version
+  pboi changelog   Show the installed changelog
+  pboi help        Show this help
+EOF
+}
+
+show_changelog() {
+    if [[ -f "$TARGET_QS/CHANGELOG.md" ]]; then
+        cat "$TARGET_QS/CHANGELOG.md"
+    else
+        echo "No installed changelog found. Run: pboi update"
+    fi
+}
+
+update_personaboi() {
+    for cmd in git rsync sed; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            echo "Missing required command: $cmd" >&2
+            exit 1
+        fi
+    done
+
+    local tmpdir
+    tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/pboi-update.XXXXXX")"
+    trap 'rm -rf "$tmpdir"' EXIT
+
+    echo "Checking Personaboi updates..."
+    git clone --quiet --depth 50 --branch "$BRANCH" "$REPO_URL" "$tmpdir/repo"
+
+    local new_commit new_version old_commit old_version
+    new_commit="$(git -C "$tmpdir/repo" rev-parse HEAD)"
+    new_version="$(tr -d '[:space:]' < "$tmpdir/repo/VERSION")"
+    old_commit="$(cat "$STATE_COMMIT" 2>/dev/null || true)"
+    old_version="$(cat "$STATE_VERSION" 2>/dev/null || true)"
+
+    if [[ -z "$old_version" && -f "$TARGET_QS/VERSION" ]]; then
+        old_version="$(tr -d '[:space:]' < "$TARGET_QS/VERSION")"
+    fi
+
+    if [[ -n "$old_commit" && "$old_commit" == "$new_commit" ]]; then
+        printf 'Already up to date: Personaboi v%s (%s)\n' "$new_version" "${new_commit:0:7}"
+        exit 0
+    fi
+
+    mkdir -p "$STATE_DIR/backups" "$TARGET_HYPR" "$TARGET_ENV" "$HOME/.local/bin"
+
+    local backup="$STATE_DIR/backups/previous"
+    rm -rf "$backup"
+    mkdir -p "$backup"
+
+    echo "Backing up current Personaboi configuration..."
+    if [[ -d "$TARGET_QS" ]]; then
+        rsync -a "$TARGET_QS/" "$backup/persona/"
+    fi
+    if [[ -f "$TARGET_HYPR/hyprland.conf" ]]; then
+        mkdir -p "$backup/hypr"
+        cp -a "$TARGET_HYPR/hyprland.conf" "$backup/hypr/hyprland.conf"
+    fi
+    if [[ -f "$TARGET_ENV/qt.conf" ]]; then
+        mkdir -p "$backup/environment.d"
+        cp -a "$TARGET_ENV/qt.conf" "$backup/environment.d/qt.conf"
+    fi
+
+    local qs_was_running=0
+    if pgrep -x qs >/dev/null 2>&1; then
+        qs_was_running=1
+    fi
+
+    echo "Applying Personaboi v$new_version..."
+    mkdir -p "$TARGET_QS"
+    rsync -a --delete \
+        --exclude '.git/' \
+        --exclude 'setup/' \
+        --exclude 'docs/' \
+        "$tmpdir/repo/" "$TARGET_QS/"
+
+    sed "s#__HOME__#$HOME#g" "$tmpdir/repo/setup/hyprland.conf.in" > "$TARGET_HYPR/hyprland.conf"
+    cp "$tmpdir/repo/setup/qt.conf" "$TARGET_ENV/qt.conf"
+    install -Dm755 "$tmpdir/repo/setup/pboi" "$CLI_TARGET"
+
+    if command -v Hyprland >/dev/null 2>&1; then
+        if ! Hyprland --verify-config >/tmp/pboi-hyprland-verify.log 2>&1; then
+            echo "Hyprland config verification failed. Restoring previous configuration..." >&2
+            if [[ -d "$backup/persona" ]]; then
+                rm -rf "$TARGET_QS"
+                mkdir -p "$TARGET_QS"
+                rsync -a "$backup/persona/" "$TARGET_QS/"
+            fi
+            if [[ -f "$backup/hypr/hyprland.conf" ]]; then
+                cp "$backup/hypr/hyprland.conf" "$TARGET_HYPR/hyprland.conf"
+            fi
+            if [[ -f "$backup/environment.d/qt.conf" ]]; then
+                cp "$backup/environment.d/qt.conf" "$TARGET_ENV/qt.conf"
+            fi
+            cat /tmp/pboi-hyprland-verify.log >&2 || true
+            exit 1
+        fi
+    fi
+
+    printf '%s\n' "$new_commit" > "$STATE_COMMIT"
+    printf '%s\n' "$new_version" > "$STATE_VERSION"
+
+    if command -v hyprctl >/dev/null 2>&1 && hyprctl version >/dev/null 2>&1; then
+        hyprctl reload >/dev/null 2>&1 || true
+    fi
+
+    if [[ "$qs_was_running" -eq 1 ]]; then
+        pkill -x qs >/dev/null 2>&1 || true
+        nohup qs -c "$TARGET_QS" >/tmp/personaboi-quickshell.log 2>&1 &
+    fi
+
+    printf '\nUpdated: %s -> v%s\n' "${old_version:-unknown}" "$new_version"
+    printf 'Commit: %s\n\n' "${new_commit:0:7}"
+    echo "Updates pulled:"
+
+    if [[ -n "$old_commit" ]] && git -C "$tmpdir/repo" cat-file -e "$old_commit^{commit}" 2>/dev/null; then
+        if [[ -n "$(git -C "$tmpdir/repo" log --format='%h %s' "$old_commit..$new_commit")" ]]; then
+            git -C "$tmpdir/repo" log --reverse --format='  %h  %s' "$old_commit..$new_commit"
+        else
+            echo "  No new commit messages to show."
+        fi
+    else
+        git -C "$tmpdir/repo" log -5 --format='  %h  %s'
+    fi
+
+    printf '\nPersonaboi v%s is now active.\n' "$new_version"
+    if [[ "$qs_was_running" -eq 1 ]]; then
+        echo "Quickshell was restarted automatically."
+    fi
+}
+
+case "${1:-help}" in
+    update)
+        update_personaboi
+        ;;
+    version|--version|-v)
+        print_version
+        ;;
+    changelog)
+        show_changelog
+        ;;
+    help|--help|-h)
+        show_help
+        ;;
+    *)
+        echo "Unknown command: $1" >&2
+        show_help >&2
+        exit 2
+        ;;
+esac
