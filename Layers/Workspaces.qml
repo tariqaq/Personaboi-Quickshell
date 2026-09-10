@@ -23,29 +23,34 @@ Scope {
             required property var modelData
             screen: modelData
 
+            // A thin full-width shell strip reserves the top edge so tiled
+            // windows always begin below the workspace indicator.
             anchors {
                 top: true
                 left: true
+                right: true
             }
 
-            margins {
-                top: 18
-                left: 18
-            }
-
-            implicitWidth: workspaceRow.implicitWidth + 20
-            implicitHeight: 42
+            implicitHeight: 30
+            exclusiveZone: 30
             color: "transparent"
             visible: Hyprland.connected
             focusable: false
 
             WlrLayershell.layer: WlrLayer.Top
-            WlrLayershell.exclusionMode: ExclusionMode.Ignore
+            WlrLayershell.exclusionMode: ExclusionMode.Normal
             WlrLayershell.namespace: "personaboi.workspaces"
 
             Rectangle {
-                anchors.fill: parent
-                radius: 10
+                id: workspacePill
+                anchors.left: parent.left
+                anchors.top: parent.top
+                anchors.leftMargin: 4
+                anchors.topMargin: 3
+
+                width: workspaceRow.implicitWidth + 12
+                height: 24
+                radius: 7
                 color: "#d90c0f1d"
                 border.width: 1
                 border.color: "#6652A4CD"
@@ -54,7 +59,7 @@ Scope {
                     anchors.left: parent.left
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
-                    width: 4
+                    width: 3
                     radius: 2
                     color: Dat.Colors.color5
                 }
@@ -62,7 +67,8 @@ Scope {
                 Row {
                     id: workspaceRow
                     anchors.centerIn: parent
-                    spacing: 4
+                    anchors.horizontalCenterOffset: 1
+                    spacing: 2
 
                     Repeater {
                         model: workspaceScope.shownWorkspaces
@@ -74,13 +80,13 @@ Scope {
                             readonly property bool isNumber: typeof modelData === "number"
                             readonly property bool isActive: isNumber && modelData === workspaceScope.currentWorkspace
 
-                            width: modelData === "..." ? 24 : (modelData === 10 ? 34 : 30)
-                            height: 28
+                            width: modelData === "..." ? 18 : (modelData === 10 ? 27 : 23)
+                            height: 20
 
                             Rectangle {
                                 id: workspaceChip
                                 anchors.fill: parent
-                                radius: 7
+                                radius: 5
                                 color: workspaceItem.isActive
                                     ? Dat.Colors.color3
                                     : (workspaceMouse.containsMouse && workspaceItem.isNumber
@@ -98,7 +104,7 @@ Scope {
                                     text: workspaceItem.modelData
                                     color: workspaceItem.isActive ? Dat.Colors.color0 : Dat.Colors.foreground
                                     font.family: "JetBrainsMono Nerd Font"
-                                    font.pixelSize: workspaceItem.modelData === "..." ? 13 : 14
+                                    font.pixelSize: workspaceItem.modelData === "..." ? 10 : 11
                                     font.bold: workspaceItem.isActive
                                 }
                             }
