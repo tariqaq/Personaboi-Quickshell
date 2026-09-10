@@ -113,8 +113,8 @@ Scope {
                                 Text {
                                     id: prevIcon
                                     anchors.centerIn: parent
-                                    text: "skip_previous"
-                                    font.family: "Material Symbols Rounded"
+                                    text: "⏮"
+                                    font.family: "Noto Sans Symbols 2"
                                     font.pixelSize: 30
                                     color: prevMouse.containsMouse ? Dat.Colors.color3 : Dat.Colors.color15
                                     Behavior on color {
@@ -203,8 +203,8 @@ Scope {
                                 Text {
                                     id: nextIcon
                                     anchors.centerIn: parent
-                                    text: "skip_next"
-                                    font.family: "Material Symbols Rounded"
+                                    text: "⏭"
+                                    font.family: "Noto Sans Symbols 2"
                                     font.pixelSize: 30
                                     color: nextMouse.containsMouse ? Dat.Colors.color3 : Dat.Colors.color15
                                     Behavior on color {
