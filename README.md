@@ -8,20 +8,19 @@ A reproducible Ubuntu 26.04 + Hyprland setup based on **Yujon Pradhananga's Pers
 
 ## Current version
 
-**v1.1** — workspace tracking + shared updater workflow.
+**v1.2** — input handling, launcher convenience, and power/session reliability.
 
 See the full release history in **[`CHANGELOG.md`](CHANGELOG.md)**.
 
 For continuing this project in a fresh ChatGPT/agent conversation, start by reading **[`AGENTS.md`](AGENTS.md)**. It records the project flow, live paths, updater rules, compatibility lessons, privilege model, and shared-vs-personal customization policy.
 
-### v1.1 focus
+### v1.2 focus
 
-- New Persona-styled workspace tracker in the top-left.
-- Workspaces `1 2 3 4 5` stay visible at all times.
-- If the active workspace is `6`–`10`, it becomes `1 2 3 4 5 ... N`, with `N` highlighted.
-- Workspace numbers are clickable.
-- New `pboi update` command keeps the live Persona files, Hyprland config, and Qt environment config synced with this repository.
-- Updates are backed up before applying, Hyprland config is verified, Quickshell is restarted when appropriate, and the pulled commit messages are shown afterward.
+- `Super+E` opens GNOME Files (`nautilus`).
+- `Super+B` opens the XDG default browser.
+- Standard brightness keysyms remain supported, with an MSI/XKB raw-key fallback for the tested laptop.
+- Persona power actions use working systemd/Hyprland commands.
+- The full-width workspace reservation strip is click-through outside the visible workspace pill, so it no longer blocks browser tabs or other app UI underneath it.
 
 ## What this fork adds
 
@@ -138,14 +137,15 @@ On workspaces 6–10:
 1  2  3  4  5  ...  [9]
 ```
 
-The active workspace uses the existing Persona cyan/blue palette. Clicking any displayed workspace number switches to it directly through Quickshell's Hyprland service.
+The active workspace uses the existing Persona cyan/blue palette. Clicking any displayed workspace number switches to it directly through Quickshell's Hyprland service. The reserved full-width top strip only accepts pointer input over the visible workspace pill; the rest of the strip passes clicks through to applications below.
 
 ## Important controls
 
 | Binding / gesture | Action |
 |---|---|
 | `Super+Q` | Kitty terminal |
-| `Super+E` | Dolphin file manager |
+| `Super+E` | GNOME Files (`nautilus`) |
+| `Super+B` | Default web browser |
 | `Super+C` | Close focused window |
 | `Super+V` | Toggle tiled/floating |
 | `Super+R` | Persona launcher |
