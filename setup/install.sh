@@ -5,6 +5,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET_QS="$HOME/.config/quickshell/persona"
 TARGET_HYPR="$HOME/.config/hypr"
 TARGET_ENV="$HOME/.config/environment.d"
+STATE_DIR="$HOME/.local/share/personaboi"
 WORKDIR="${TMPDIR:-/tmp}/personaboi-setup-$USER"
 
 if [[ ! -r /etc/os-release ]]; then
@@ -68,8 +69,8 @@ find "$WORKDIR/fonts/JetBrainsMono" -maxdepth 1 -type f -name '*.ttf' \
   -exec cp -f {} "$HOME/.local/share/fonts/JetBrainsMono/" \;
 fc-cache -f
 
-printf '\n[6/7] Installing Personaboi Quickshell and dotfiles...\n'
-mkdir -p "$TARGET_QS" "$TARGET_HYPR" "$TARGET_ENV"
+printf '\n[6/7] Installing Personaboi Quickshell, dotfiles, and updater...\n'
+mkdir -p "$TARGET_QS" "$TARGET_HYPR" "$TARGET_ENV" "$STATE_DIR" "$HOME/.local/bin"
 rsync -a --delete \
   --exclude '.git/' \
   --exclude 'setup/' \
@@ -78,10 +79,20 @@ rsync -a --delete \
 
 sed "s#__HOME__#$HOME#g" "$REPO_ROOT/setup/hyprland.conf.in" > "$TARGET_HYPR/hyprland.conf"
 cp "$REPO_ROOT/setup/qt.conf" "$TARGET_ENV/qt.conf"
+install -Dm755 "$REPO_ROOT/setup/pboi" "$HOME/.local/bin/pboi"
+
+if [[ -f "$REPO_ROOT/VERSION" ]]; then
+  tr -d '[:space:]' < "$REPO_ROOT/VERSION" > "$STATE_DIR/version"
+  printf '\n' >> "$STATE_DIR/version"
+fi
+if git -C "$REPO_ROOT" rev-parse HEAD >/dev/null 2>&1; then
+  git -C "$REPO_ROOT" rev-parse HEAD > "$STATE_DIR/commit"
+fi
 
 printf '\n[7/7] Verifying the configuration...\n'
 Hyprland --verify-config
-printf '\nInstalled Quickshell: '; qs --version || true
+printf '\nInstalled Personaboi: v'; cat "$REPO_ROOT/VERSION" 2>/dev/null || echo 'unknown'
+printf 'Installed Quickshell: '; qs --version || true
 printf 'Installed Hyprland: '; Hyprland --version | head -n 1 || true
 printf 'Nerd Font match: '; fc-match 'JetBrainsMono Nerd Font' | head -n 1 || true
 
@@ -106,4 +117,12 @@ Useful keys:
   Super+Print   select screenshot area and copy to clipboard
 
 The Persona side blades are drag-to-activate: drag a blade right and release it.
+
+Updates:
+  pboi update      pull and apply the newest shared setup
+  pboi version     show the installed Personaboi version
+  pboi changelog   show the installed changelog
+
+If pboi is not found in the current shell immediately after this fresh install,
+log out and back in once so Ubuntu adds ~/.local/bin to PATH.
 EOF2
