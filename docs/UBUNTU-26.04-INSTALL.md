@@ -2,6 +2,8 @@
 
 This guide reproduces the tested Personaboi desktop on a fresh **Ubuntu 26.04 Desktop** install.
 
+Current Personaboi release: **v1.1**. See [`../CHANGELOG.md`](../CHANGELOG.md) for release notes.
+
 ## Tested snapshot
 
 - Ubuntu 26.04 (Resolute)
@@ -28,7 +30,7 @@ Read the NVIDIA notes printed at the end before logging into Hyprland.
 
 ### 1. Hyprland and desktop utilities
 
-It enables Ubuntu Universe and installs Hyprland plus the pieces a bare compositor session does not provide by itself: portal support, terminal, file manager, brightness/media controls, screenshots, NetworkManager/Blueman applets, Polkit authentication, Qt Wayland support, and fonts.
+It enables Ubuntu Universe and installs Hyprland plus the pieces a bare compositor session does not provide by itself: portal support, Hyprland Qt utilities, terminal, file manager, brightness/media controls, screenshots, NetworkManager/Blueman applets, Polkit authentication, Qt Wayland support, and fonts.
 
 ### 2. Quickshell
 
@@ -55,7 +57,7 @@ It builds Yujon Pradhananga's `Qt6-Cava-plugin` into:
 
 It downloads the current JetBrainsMono Nerd Font release into the user's local font directory and refreshes Fontconfig.
 
-### 6. Dotfiles
+### 6. Dotfiles and updater
 
 It installs this repository as:
 
@@ -68,9 +70,16 @@ and installs:
 ```text
 ~/.config/hypr/hyprland.conf
 ~/.config/environment.d/qt.conf
+~/.local/bin/pboi
 ```
 
 The stored Hyprland file is a template; the installer substitutes the current user's home directory so the setup is not tied to `/home/trq`.
+
+The installer also records the installed Personaboi version/commit under:
+
+```text
+~/.local/share/personaboi/
+```
 
 ## NVIDIA before first login
 
@@ -109,11 +118,59 @@ Useful bindings in the supplied configuration:
 
 Laptop brightness and media keys use `brightnessctl`, `wpctl`, and `playerctl`.
 
+## Workspace tracker
+
+Personaboi v1.1 adds a compact workspace tracker in the top-left.
+
+For workspaces 1–5 it shows the fixed set:
+
+```text
+1  2  [3]  4  5
+```
+
+If workspace 6–10 is active, it dynamically appends that workspace:
+
+```text
+1  2  3  4  5  ...  [9]
+```
+
+Each displayed number can also be clicked to switch workspace.
+
 ## Persona controls
 
 The left-side Persona blades are **drag-to-activate**. Click the `:3` control to expand them, drag Calendar / Stats / Shaders / Power to the right, then release.
 
 The Power blade opens the animated Persona power screen; its actions use `loginctl`.
+
+## Keeping multiple machines in sync
+
+Personaboi v1.1 includes a small updater command. After installation, use:
+
+```bash
+pboi update
+```
+
+It downloads the latest `main` branch, backs up the current live setup, applies the new Persona/Hyprland/Qt configuration, verifies Hyprland, reloads/restarts the relevant session pieces, and prints the recent commit messages pulled.
+
+Other commands:
+
+```bash
+pboi version
+pboi changelog
+```
+
+If a machine was installed before v1.1, install the updater once from an existing repo clone:
+
+```bash
+cd ~/Personaboi-Quickshell
+git pull
+mkdir -p ~/.local/bin
+install -Dm755 setup/pboi ~/.local/bin/pboi
+export PATH="$HOME/.local/bin:$PATH"
+pboi update
+```
+
+After that, the normal workflow on both machines is simply `pboi update`.
 
 ## Verify after installation
 
