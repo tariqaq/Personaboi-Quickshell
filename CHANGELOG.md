@@ -14,11 +14,12 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - `Super+E` now opens GNOME Files (`nautilus`) instead of Dolphin, and fresh installs explicitly install `nautilus`.
 - Corrected the MSI brightness fallback from Linux evdev codes 224/225 to their XKB keycodes 232/233, which are the values Hyprland's `code:` binding expects.
 - Power-menu shutdown/reboot now call `systemctl poweroff` / `systemctl reboot`, while logout exits the current Hyprland session with `hyprctl dispatch exit`.
-- `Super+V` now makes a newly-floating window visibly smaller (70% x 72% of the monitor) and centers it; pressing `Super+V` again returns it to normal tiled layout control.
+- `Super+V` makes a newly-floating window visibly smaller (70% x 72% of the monitor) and centers it; pressing `Super+V` again returns it to normal tiled layout control.
 
 ### Fixed
 - Fixed the Persona power menu using unsupported `loginctl poweroff` / `loginctl reboot` commands.
 - Fixed the workspace shell strip blocking clicks on application UI underneath it. The strip still reserves the top edge, but its input mask now only covers the visible workspace pill, so the rest of the top strip is click-through.
+- Fixed `Super+V` becoming unresponsive after the first floating-resize implementation embedded shell logic directly inside Hyprland's comma-delimited bind line. The state check now lives in `Scripts/toggle-floating.sh`, while the Hyprland bind simply launches that helper.
 
 ### Known / investigating
 - On the tested MSI Stealth laptop, brightness hotkeys emit `KEY_BRIGHTNESSDOWN/UP` on the ACPI `Video Bus` device and work in GNOME, but are still not reaching Hyprland's bind path. `brightnessctl` itself works correctly. Further input-stack diagnosis is required rather than adding more guessed keycodes.
