@@ -109,6 +109,8 @@ Scope {
                 z: 2
 
                 // Ten-day diagonal: three days behind, today, and six ahead.
+                // All non-today entries intentionally use identical sizing so
+                // the diagonal reads consistently instead of growing/shrinking.
                 Repeater {
                     model: 10
                     delegate: CalendarEntry {
@@ -160,10 +162,13 @@ Scope {
             d.setHours(12, 0, 0, 0);
             return Math.round((dateObj - d) / 86400000);
         }
-        readonly property real scaleFactor: todayFlag ? 1.0 : (pastFlag ? Math.max(0.45, 0.78 - Math.abs(offset) * 0.09) : Math.min(1.25, 0.78 + offset * 0.07))
-        readonly property real alphaVal: todayFlag ? 1.0 : Math.max(0.38, 1.0 - Math.abs(offset) * 0.10)
-        readonly property real numSize: todayFlag ? 86 : Math.max(28, 62 * scaleFactor)
-        readonly property real dayLabelSize: todayFlag ? 17 : Math.max(9, 13 * scaleFactor)
+
+        // Keep every ordinary day visually uniform. Today is the only larger
+        // entry because its concentric Persona highlight is the focal point.
+        readonly property real numSize: todayFlag ? 86 : 54
+        readonly property real dayLabelSize: todayFlag ? 17 : 12
+        readonly property real alphaVal: todayFlag ? 1.0 : (pastFlag ? 0.68 : 0.78)
+        readonly property real moonR: todayFlag ? 33 : 15
         readonly property real moonPhaseDeg: Dat.Time.moonPhaseDegreeFor(dateObj)
 
         readonly property var dayNames: ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
@@ -239,18 +244,17 @@ Scope {
 
         Item {
             id: moonItem
-            readonly property real moonR: entryRoot.todayFlag ? 33 : Math.max(10, 22 * entryRoot.scaleFactor)
             anchors.verticalCenter: parent.verticalCenter
             anchors.verticalCenterOffset: entryRoot.numSize * 1.05
             anchors.left: parent.left
             anchors.leftMargin: entryRoot.numSize * 1.55
-            width: moonR
-            height: moonR * 2
+            width: entryRoot.moonR
+            height: entryRoot.moonR * 2
 
             Rectangle {
                 visible: entryRoot.todayFlag
                 anchors.centerIn: parent
-                width: parent.moonR * 2 + 6
+                width: entryRoot.moonR * 2 + 6
                 height: width
                 radius: width / 2
                 color: "transparent"
@@ -261,7 +265,7 @@ Scope {
             Item {
                 id: moonSphere
                 anchors.centerIn: parent
-                width: parent.moonR * 2
+                width: entryRoot.moonR * 2
                 height: width
                 clip: true
                 layer.enabled: true
