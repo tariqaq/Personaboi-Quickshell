@@ -2,6 +2,26 @@
 
 All notable Personaboi changes are tracked here. Versions describe this Ubuntu 26.04 fork, not upstream Persona-Quickshell releases.
 
+## v1.3 — 2026-09-11
+
+**Focus:** richer Persona utilities and more informative system views.
+
+### Added
+- Persona-styled intensity control for all three screen shaders: Bluelight, Greyscale, and Inversion.
+- Per-shader remembered intensity values in the running Quickshell session.
+- Runtime shader rendering helper that creates a user-cache copy with the chosen intensity and switches Hyprland to that copy without modifying the repo shader files.
+- Expanded Stats panel telemetry: hostname, kernel, uptime, CPU model, logical CPU count, 1/5/15-minute load average, process count, GPU name, GPU utilization, VRAM usage, GPU temperature, sessions, plus the existing OS/CPU/RAM/disk data.
+
+### Changed
+- Calendar view now shows 10 diagonal days instead of 7: three previous days, today, and six upcoming days.
+- Calendar date sizing/spacing was retuned so the extra days fit while preserving the Persona diagonal composition.
+- Desktop clock moon and calendar moon icons now use the same shared phase calculation from `Data/Time.qml` instead of two separate approximations.
+- Moon calculations use a mean synodic month of 29.53059 days and a common reference new moon; future calendar entries therefore update their phase automatically from their date.
+
+### Notes
+- Moon phases are calculated locally; Personaboi does not call a weather or astronomy API for them. The display is an approximation based on the mean synodic cycle, not a high-precision astronomical ephemeris.
+- Hyprland exposes `decoration:screen_shader` as a shader path rather than an arbitrary custom-uniform control, so shader intensity is implemented by generating a temporary shader in `~/.cache/personaboi/shaders/` with the chosen constant baked in, then switching Hyprland to that file.
+
 ## v1.2 — 2026-09-11
 
 **Focus:** input handling, launcher convenience, and power/session reliability.
@@ -21,6 +41,7 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - Fixed the workspace shell strip blocking clicks on application UI underneath it. The strip still reserves the top edge, but its input mask now only covers the visible workspace pill, so the rest of the top strip is click-through.
 - Fixed `Super+V` becoming unresponsive after the first floating-resize implementation embedded shell logic directly inside Hyprland's comma-delimited bind line. The state check now lives in `Scripts/toggle-floating.sh`, while the Hyprland bind simply launches that helper.
 - Hardened the `Super+V` helper so it accepts both boolean (`true`/`false`) and numeric (`1`/`0`) floating-state values, and falls back to Hyprland's native `togglefloating` if state detection ever fails. Resize/center failures can no longer make the toggle itself silently do nothing.
+- Added a short post-toggle delay before resize/center so the floating geometry is applied after Hyprland commits the tiled-to-floating transition.
 
 ### Known / investigating
 - On the tested MSI Stealth laptop, brightness hotkeys emit `KEY_BRIGHTNESSDOWN/UP` on the ACPI `Video Bus` device and work in GNOME, but are still not reaching Hyprland's bind path. `brightnessctl` itself works correctly. Further input-stack diagnosis is required rather than adding more guessed keycodes.
@@ -64,7 +85,7 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 
 **Focus:** make Persona-Quickshell reproducible on a fresh Ubuntu 26.04 Desktop installation.
 
-- Ubuntu 26.04 Hyprland bootstrap and supporting session packages.
+- Ubuntu 26.04 installation/bootstrap scripts.
 - Quickshell installation through the DankLinux PPA.
 - CAVA core and Qt6 CavaMonitor plugin build/install steps.
 - JetBrainsMono Nerd Font installation.
