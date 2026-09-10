@@ -45,11 +45,21 @@ Item {
     function toggleShader(index) {
         if (activeShaderIndex === index) {
             activeShaderIndex = -1;
-            shaderProc.command = ["hyprctl", "eval", "hl.config({ decoration = { screen_shader = \"\" } })"];
+            shaderProc.command = [
+                "hyprctl",
+                "keyword",
+                "decoration:screen_shader",
+                "[[EMPTY]]"
+            ];
             shaderProc.startDetached();
         } else {
             activeShaderIndex = index;
-            shaderProc.command = ["hyprctl", "eval", "hl.config({ decoration = { screen_shader = \"" + shaderPaths[index] + "\" } })"];
+            shaderProc.command = [
+                "hyprctl",
+                "keyword",
+                "decoration:screen_shader",
+                shaderPaths[index]
+            ];
             shaderProc.startDetached();
         }
     }
