@@ -37,9 +37,11 @@ Hyprland --version 2>/dev/null | head -n 1 || true
 qs --version 2>/dev/null || true
 fc-match 'JetBrainsMono Nerd Font' | head -n 1 || true
 
-if [[ -e /sys/module/nvidia_drm/parameters/modeset ]]; then
-  mode="$(sudo cat /sys/module/nvidia_drm/parameters/modeset 2>/dev/null || true)"
+if [[ -r /sys/module/nvidia_drm/parameters/modeset ]]; then
+  mode="$(cat /sys/module/nvidia_drm/parameters/modeset 2>/dev/null || true)"
   [[ "$mode" == 'Y' ]] && pass 'NVIDIA DRM modeset = Y' || warn "NVIDIA DRM modeset = ${mode:-unknown}"
+elif [[ -e /sys/module/nvidia_drm/parameters/modeset ]]; then
+  warn 'NVIDIA DRM modeset exists but is not readable as the current user'
 else
   warn 'nvidia_drm is not loaded (fine on non-NVIDIA systems)'
 fi
