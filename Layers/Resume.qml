@@ -118,7 +118,7 @@ Scope {
                                 color: cardWrap.isActive ? "#8df6ff" : "#10185f"
                                 border.color: cardWrap.isActive ? "#eaffff" : "#213ca0"
                                 border.width: 2
-                                transform: Shear { xAngle: -3 }
+                                rotation: -1
                             }
 
                             Rectangle {
