@@ -21,7 +21,7 @@ Do **not** make a one-off local-only customization unless the user explicitly sa
 2. Patch the repo directly on `main` unless the user asks for a branch/PR.
 3. Keep the change compatible with Ubuntu 26.04 and standard `hyprland.conf` syntax.
 4. Update `CHANGELOG.md` when the change is user-visible.
-5. Bump `VERSION` only when the user explicitly declares a new release/version or the change clearly belongs to a new release.
+5. Do **not** bump `VERSION` unless the user explicitly says to start/bump a new version. Keep stacking normal fixes/features into the current version until then.
 6. The user and friend then apply it with `pboi update`.
 7. Prefer native Quickshell/Hyprland APIs over shell polling when available.
 8. Preserve upstream Persona styling rather than adding generic Waybar-looking UI.
@@ -134,6 +134,8 @@ cursor {
 
   Do not change this back to `1` for this tested configuration unless troubleshooting a different GPU.
 - Do not install standalone `libnvidia-egl-gbm1` if APT proposes removing the Ubuntu NVIDIA driver metapackage / `libnvidia-gl-*` packages.
+- `Super+V` toggles tiled/floating; when changing from tiled to floating, the window is resized to 70% x 72% of the monitor and centered so floating mode is visually obvious. Toggling back returns it to tiled layout control.
+- Brightness hotkeys remain under investigation on the tested MSI Stealth. `brightnessctl` works, and `evtest` shows `KEY_BRIGHTNESSDOWN/UP` from the ACPI `Video Bus`, but those events are not currently reaching Hyprland's bind path. Keep normal XF86 binds and the current fallback until a proper input-stack fix is confirmed; do not keep guessing new keycodes.
 
 ## Workspace tracker
 
@@ -159,15 +161,16 @@ Example:
 
 Numbers are clickable and switch workspace via Quickshell's `Hyprland.dispatch()`.
 
-The tracker sits at the top-left in a thin full-width reserved shell strip so tiled windows remain below it. The Hyprland top outer gap is intentionally smaller than the other three edges to avoid excessive empty space below the tracker.
+The tracker sits at the top-left in a thin full-width reserved shell strip so tiled windows remain below it. The Hyprland top outer gap is intentionally smaller than the other three edges to avoid excessive empty space below the tracker. The full-width strip is click-through except for the visible workspace pill, so it must not block application UI beneath it.
 
 ## Shared Hyprland controls
 
 ```text
 Super+Q             Kitty
-Super+E             Dolphin
+Super+E             GNOME Files / Nautilus
+Super+B             default XDG browser
 Super+C             close focused window
-Super+V             tiled <-> floating
+Super+V             tiled <-> floating; floating becomes smaller + centered
 Super+R             Persona launcher
 Super+M             leave Hyprland
 Super+Arrow         focus direction
@@ -205,6 +208,7 @@ Workspace switching, Wi-Fi controls, brightness, MPRIS, and the power menu do no
 - When a local test is needed, give the exact command/file edit first; after confirmation, preserve it in the repo.
 - For shared changes, prefer updating GitHub and telling the user to run `pboi update` rather than asking both users to manually edit files.
 - Personal-only app tweaks (for example Spotify/Discord launch flags or one-off screen recording setup) should not be added to Personaboi unless explicitly requested.
+- Keep stacking changes into the current release version until the user explicitly asks for a version bump.
 
 ## New-chat instruction
 
