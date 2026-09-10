@@ -10,6 +10,14 @@ STATE_DIR="$HOME/.local/share/personaboi"
 STATE_COMMIT="$STATE_DIR/commit"
 STATE_VERSION="$STATE_DIR/version"
 CLI_TARGET="$HOME/.local/bin/pboi"
+PBOI_TMPDIR=""
+
+cleanup() {
+    if [[ -n "${PBOI_TMPDIR:-}" && -d "$PBOI_TMPDIR" ]]; then
+        rm -rf -- "$PBOI_TMPDIR"
+    fi
+}
+trap cleanup EXIT
 
 print_version() {
     local version="unknown"
@@ -49,9 +57,8 @@ update_personaboi() {
         fi
     done
 
-    local tmpdir
-    tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/pboi-update.XXXXXX")"
-    trap 'rm -rf "$tmpdir"' EXIT
+    PBOI_TMPDIR="$(mktemp -d "${TMPDIR:-/tmp}/pboi-update.XXXXXX")"
+    local tmpdir="$PBOI_TMPDIR"
 
     echo "Checking Personaboi updates..."
     git clone --quiet --depth 50 --branch "$BRANCH" "$REPO_URL" "$tmpdir/repo"
@@ -68,7 +75,7 @@ update_personaboi() {
 
     if [[ -n "$old_commit" && "$old_commit" == "$new_commit" ]]; then
         printf 'Already up to date: Personaboi v%s (%s)\n' "$new_version" "${new_commit:0:7}"
-        exit 0
+        return 0
     fi
 
     if [[ -f "$tmpdir/repo/setup/update-hook.sh" ]]; then
