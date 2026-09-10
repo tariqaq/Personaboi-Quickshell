@@ -8,37 +8,36 @@ A reproducible Ubuntu 26.04 + Hyprland setup based on **Yujon Pradhananga's Pers
 
 ## Current version
 
-**v1.2** — input handling, launcher convenience, and power/session reliability.
+**v1.3** — richer Persona utilities, shader controls, expanded stats, and a 10-day lunar calendar.
 
 See the full release history in **[`CHANGELOG.md`](CHANGELOG.md)**.
 
-For continuing this project in a fresh ChatGPT/agent conversation, start by reading **[`AGENTS.md`](AGENTS.md)**. It records the project flow, live paths, updater rules, compatibility lessons, privilege model, and shared-vs-personal customization policy.
+For continuing this project in a fresh ChatGPT/agent conversation, start by reading **[`AGENTS.md`](AGENTS.md)**.
 
-### v1.2 focus
+### v1.3 focus
 
-- `Super+E` opens GNOME Files (`nautilus`).
-- `Super+B` opens the XDG default browser.
-- Standard brightness keysyms remain supported, with an MSI/XKB raw-key fallback for the tested laptop.
-- Persona power actions use working systemd/Hyprland commands.
-- The full-width workspace reservation strip is click-through outside the visible workspace pill, so it no longer blocks browser tabs or other app UI underneath it.
+- Persona-styled intensity slider for Bluelight, Greyscale, and Inversion screen shaders.
+- Expanded Stats page with host/kernel/uptime/load/process/GPU telemetry in addition to CPU/RAM/disk.
+- Calendar expanded from 7 to 10 diagonal days.
+- Desktop and calendar moon graphics share one local synodic-cycle model.
+- Moon phase calculation is local and offline; it does not call a weather/astronomy service.
 
 ## What this fork adds
 
 - Ubuntu 26.04 installation/bootstrap scripts.
-- A tested Hyprland configuration with 125% display scaling.
+- Tested Hyprland configuration with 125% display scaling.
 - Persona autostart plus NetworkManager, Blueman, and Polkit session pieces.
 - NVIDIA settings used on the tested RTX 4060 laptop.
-- A Quickshell system tray with left-click and native right-click menus.
-- `UseQApplication` so tray context menus actually work.
+- Quickshell system tray with native right-click menus.
 - Persona workspace tracker and click-to-switch workspaces.
-- The media capsule hides itself when no MPRIS player exists.
-- Proper previous/next media symbols instead of missing-font placeholder text.
-- Clock sizing and Linux font substitutions for the 1920x1200 @ 1.25 layout.
-- JetBrainsMono Nerd Font installation for battery/icon glyphs.
-- Standard `hyprland.conf` shader switching with `hyprctl keyword` instead of Lua-only `hyprctl eval`.
-- A documented fix for the stationary duplicate NVIDIA cursor.
+- Media capsule that hides when no MPRIS player exists.
+- Clock sizing and Linux font substitutions for 1920x1200 @ 1.25.
+- JetBrainsMono Nerd Font installation for icon/battery glyphs.
+- Standard `hyprland.conf` shader switching via `hyprctl keyword` instead of upstream Lua-only runtime commands.
+- Per-shader intensity controls implemented through runtime-generated cache shaders.
+- 10-day Persona calendar with locally calculated moon phases.
+- Expanded system telemetry panel.
 - `pboi` updater for keeping multiple installs on the same repo version.
-- A troubleshooting record of the issues encountered during the Ubuntu setup.
 
 ## Tested environment
 
@@ -65,21 +64,13 @@ chmod +x setup/install.sh setup/verify.sh
 ./setup/install.sh
 ```
 
-Run the installer as your normal user, not with `sudo`; it requests sudo only for the system-level steps that need it.
+Run the installer as your normal user, not with `sudo`; it requests sudo only for system-level steps.
 
-The installer also installs the updater to:
-
-```text
-~/.local/bin/pboi
-```
-
-After the normal logout/login into Hyprland, `pboi` should be available directly in the terminal.
+The installer also installs the updater to `~/.local/bin/pboi`.
 
 Full instructions: **[`docs/UBUNTU-26.04-INSTALL.md`](docs/UBUNTU-26.04-INSTALL.md)**
 
 ## Updating an existing Personaboi install
-
-Once `pboi` is installed, keeping machines synced is simply:
 
 ```bash
 pboi update
@@ -87,18 +78,9 @@ pboi update
 
 Run `pboi` as the normal desktop user, never with `sudo`.
 
-The updater:
+The updater fetches `main`, runs any release migration hook, backs up the live configuration, applies the repo Persona/Hyprland/Qt files, verifies the Hyprland config, reloads Hyprland, restarts Quickshell when appropriate, and records the installed version/commit.
 
-1. Fetches the latest `main` branch from this repository.
-2. Detects the newest Personaboi version and commit.
-3. Backs up the previous live configuration to `~/.local/share/personaboi/backups/previous/`.
-4. Applies the latest Persona tree to `~/.config/quickshell/persona/`.
-5. Applies the shared `hyprland.conf` template and `qt.conf`.
-6. Verifies the Hyprland configuration before finishing.
-7. Reloads Hyprland and restarts Quickshell when they are running.
-8. Prints the new version and recent commit messages that were pulled.
-
-Useful updater commands:
+Useful commands:
 
 ```bash
 pboi version
@@ -107,8 +89,6 @@ pboi changelog
 ```
 
 ### One-time updater bootstrap for installs made before v1.1
-
-If the machine was installed before `pboi` existed but still has a clone of this repository:
 
 ```bash
 cd ~/Personaboi-Quickshell
@@ -119,11 +99,7 @@ export PATH="$HOME/.local/bin:$PATH"
 pboi update
 ```
 
-After that, future changes only need `pboi update`.
-
 ## Workspace tracker
-
-The top-left tracker is intentionally compact instead of adding a full conventional bar. Its reserved top strip is kept thin, and Hyprland uses a smaller top outer gap than the other edges so tiled windows sit close underneath it.
 
 On workspaces 1–5:
 
@@ -137,7 +113,21 @@ On workspaces 6–10:
 1  2  3  4  5  ...  [9]
 ```
 
-The active workspace uses the existing Persona cyan/blue palette. Clicking any displayed workspace number switches to it directly through Quickshell's Hyprland service. The reserved full-width top strip only accepts pointer input over the visible workspace pill; the rest of the strip passes clicks through to applications below.
+The reserved full-width top strip only accepts pointer input over the visible workspace pill; the rest passes clicks through to applications below.
+
+## Shader intensity
+
+The shader menu keeps the original Persona layout and adds an intensity rail for all three effects. Hyprland's classic configuration exposes `decoration:screen_shader` as a file path. Personaboi therefore generates a temporary shader at:
+
+```text
+~/.cache/personaboi/shaders/active.glsl
+```
+
+with the selected intensity baked into a constant, then points Hyprland at that runtime file. The source shaders in the repository remain unchanged at runtime.
+
+## Moon phase model
+
+Both the desktop clock moon and the calendar moon icons use `Data/Time.qml`. The model uses the mean synodic month (29.53059 days) from a reference new moon and calculates phase from the requested date. It is lightweight, offline, and suitable for the visual indicator, but it is not intended as a high-precision astronomical ephemeris.
 
 ## Important controls
 
@@ -147,65 +137,52 @@ The active workspace uses the existing Persona cyan/blue palette. Clicking any d
 | `Super+E` | GNOME Files (`nautilus`) |
 | `Super+B` | Default web browser |
 | `Super+C` | Close focused window |
-| `Super+V` | Toggle tiled/floating |
+| `Super+V` | Toggle tiled/floating; newly floating windows shrink and center |
 | `Super+R` | Persona launcher |
 | `Super+M` | Leave Hyprland |
 | `Super+Print` | Select area and copy screenshot |
 | Drag Persona blade right | Activate Calendar / Stats / Shaders / Power |
 
-The Persona Power screen is opened by expanding the left-side blades and **dragging the Power blade to the right**. It is not activated by a normal click.
-
 ## Repository layout
 
 ```text
 VERSION                    Current Personaboi version
-CHANGELOG.md               Version history and release focus
+CHANGELOG.md               Version history
 AGENTS.md                  ChatGPT/agent project handoff context
-Assets/                    Original Persona visual assets
-Data/                      Persona data/services
-Layers/                    Persona UI layers + custom Tray/Workspaces
-Widgets/                   Persona widgets
+Assets/                    Original Persona assets + screen shaders
+Data/                      Persona data/services including shared time/moon model
+Layers/                    Persona UI layers
+Scripts/                   Runtime helpers such as floating/shader controls
+Widgets/                   Persona widgets and system-info providers
 shell.qml                  Quickshell root
 setup/install.sh           Fresh Ubuntu 26.04 installer
 setup/pboi                 Shared updater command
-setup/update-hook.sh       Future release migration hook
+setup/update-hook.sh       Release migration hook
 setup/verify.sh            Post-install sanity checker
 setup/hyprland.conf.in     Tested Hyprland config template
 setup/qt.conf              CavaMonitor/QML environment paths
-docs/UBUNTU-26.04-INSTALL.md
-docs/CUSTOMIZATIONS.md
-docs/TROUBLESHOOTING.md
 ```
 
 ## CAVA visualizer
 
 The wallpaper visualizer uses Yujon Pradhananga's custom Qt6 CAVA plugin. The installer builds both the CAVA core library and the plugin automatically.
 
-Manual upstream plugin repository:
-
-- <https://github.com/Yujonpradhananga/Qt6-Cava-plugin>
-
 ## System tray
 
-This fork adds `Layers/Tray.qml` using Quickshell's StatusNotifier support. It appears only when tray items exist and supports application activation plus native right-click menus. `shell.qml` uses `//@ pragma UseQApplication`, which is required for those platform menus. The shared layout currently places it in the bottom-right.
+`Layers/Tray.qml` uses Quickshell's StatusNotifier support. It appears only when tray items exist and supports application activation plus native right-click menus. `shell.qml` uses `//@ pragma UseQApplication` for those platform menus.
 
 ## Notes about NVIDIA
 
 The supplied Hyprland config contains the NVIDIA environment settings that worked on the tested laptop. `nvidia_drm` modesetting was enabled (`Y`).
 
-**Do not blindly install `libnvidia-egl-gbm1`.** On the tested Ubuntu 26.04 NVIDIA 595 packages, doing so caused APT to remove the NVIDIA driver metapackage and `libnvidia-gl-595`; the driver stack then had to be restored. See [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md).
+**Do not blindly install `libnvidia-egl-gbm1`.** On the tested Ubuntu 26.04 NVIDIA 595 packages, doing so caused APT to remove the NVIDIA driver metapackage and `libnvidia-gl-*` packages.
 
 ## Upstream credits
 
 Original Persona-Quickshell by **Yujon Pradhananga**.
 
-The original project credits:
-
-- Wallpaper: Steam Workshop item 3151551777.
-- Greyscale shader: `snes19xx/surface-dots`.
-- Media-player album-art implementation: `Rexcrazy804/Zaphkiel`.
-- Persona website inspiration: `blairxu13/persona3-website`.
+The original project credits include the Steam Workshop wallpaper, `snes19xx/surface-dots` greyscale shader inspiration, `Rexcrazy804/Zaphkiel` media-player implementation, and `blairxu13/persona3-website` inspiration.
 
 ## License
 
-MIT, following the upstream project. See the repository license/history for the original work and attribution.
+MIT, following the upstream project.
