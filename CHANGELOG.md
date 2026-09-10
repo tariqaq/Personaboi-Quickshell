@@ -15,10 +15,14 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - `pboi update` pulls the latest `main` branch, safely backs up the current configuration, applies the repo's Persona/Hyprland/Qt files, verifies the Hyprland config, restarts Quickshell when needed, and prints the version plus recent pulled commit messages.
 - `pboi version` and `pboi changelog` helpers.
 - A root `VERSION` marker for straightforward release tracking.
+- Root `AGENTS.md` handoff guide with the project workflow, live paths, updater behavior, compatibility lessons, privilege model, and rules for continuing Personaboi work in a fresh ChatGPT conversation.
 
 ### Changed
-- Made the workspace tracker smaller and moved it tight to the top-left corner.
-- The workspace layer now reserves a thin 30px strip across the top of the monitor, so tiled windows begin below the tracker instead of rendering underneath it.
+- Made the workspace tracker smaller and moved it tighter to the top-left corner.
+- Reduced the reserved workspace strip from 30px to 24px.
+- Reduced only the Hyprland **top** outer gap to 6px while keeping right/bottom/left outer gaps at 20px, so tiled windows sit much closer to the workspace tracker without changing the other screen edges.
+- Fresh installation now validates sudo once up front with `sudo -v`; privileged operations remain limited to system package/repository work and `/usr/local` CAVA installation.
+- `setup/verify.sh` no longer invokes sudo for the NVIDIA DRM check when the sysfs value is readable as the current user.
 
 ### Fixed
 - Fixed `pboi update` exiting with `tmpdir: unbound variable` after an otherwise successful update. Temporary update cleanup now uses a script-level path that remains valid when the EXIT trap runs under `set -u`.
