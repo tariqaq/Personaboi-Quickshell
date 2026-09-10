@@ -12,17 +12,17 @@ Scope {
 
     Process {
         id: poweroffProcess
-        command: ["loginctl", "poweroff"]
+        command: ["systemctl", "poweroff"]
         running: false
     }
     Process {
         id: restartProcess
-        command: ["loginctl", "reboot"]
+        command: ["systemctl", "reboot"]
         running: false
     }
     Process {
         id: logoutProcess
-        command: ["loginctl", "terminate-session", "self"]
+        command: ["hyprctl", "dispatch", "exit"]
         running: false
     }
 
@@ -104,7 +104,6 @@ Scope {
                     }
                 }
 
-                // ── Stage 0: PNG sequence intro ──
                 Image {
                     id: pngSequence
                     anchors.fill: parent
@@ -136,7 +135,6 @@ Scope {
                     }
                 }
 
-                // ── Stage 1: Transition video ──
                 Video {
                     id: part2Video
                     anchors.fill: parent
@@ -162,7 +160,6 @@ Scope {
                     }
                 }
 
-                // ── Stage 2: Loop video ──
                 Video {
                     id: part3Video
                     anchors.fill: parent
@@ -173,7 +170,6 @@ Scope {
                     visible: false
                 }
 
-                // ── Power options ──
                 Item {
                     id: powerOptionsContainer
                     anchors.centerIn: parent
@@ -207,7 +203,6 @@ Scope {
                     }
                 }
 
-                // ── Dismiss ──
                 FocusScope {
                     anchors.fill: parent
                     focus: visible
