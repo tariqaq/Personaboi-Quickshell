@@ -37,6 +37,13 @@ Scope {
             visible: Hyprland.connected
             focusable: false
 
+            // The shell surface must span the full monitor width to reserve the
+            // top edge, but only the visible workspace pill should accept clicks.
+            // Everything else in this strip passes pointer input through to apps.
+            mask: Region {
+                item: workspacePill
+            }
+
             WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.exclusionMode: ExclusionMode.Normal
             WlrLayershell.namespace: "personaboi.workspaces"
