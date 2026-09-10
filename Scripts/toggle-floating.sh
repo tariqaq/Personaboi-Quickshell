@@ -1,32 +1,44 @@
 #!/usr/bin/env bash
 set -u
 
-# Always keep Super+V functional. Query the active window state when possible,
-# but fall back to Hyprland's native toggle if the state cannot be read.
 if ! command -v hyprctl >/dev/null 2>&1; then
     exit 1
 fi
 
+# Capture the focused window before changing state so we can target the same
+# client even if focus/order changes while Hyprland animates the transition.
+window_json="$(hyprctl activewindow -j 2>/dev/null || true)"
+address=""
 floating=""
-if command -v jq >/dev/null 2>&1; then
-    floating="$(hyprctl activewindow -j 2>/dev/null | jq -r '.floating // empty' 2>/dev/null || true)"
+if command -v jq >/dev/null 2>&1 && [[ -n "$window_json" ]]; then
+    address="$(printf '%s' "$window_json" | jq -r '.address // empty' 2>/dev/null || true)"
+    floating="$(printf '%s' "$window_json" | jq -r '.floating // empty' 2>/dev/null || true)"
 fi
 
 case "$floating" in
     false|0)
-        # resizeactive/centerwindow operate on floating geometry. Give Hyprland
-        # a brief moment to commit the tiled -> floating transition first.
         hyprctl dispatch togglefloating >/dev/null 2>&1 || exit 1
-        sleep 0.08
-        hyprctl dispatch resizeactive exact 70% 72% >/dev/null 2>&1 || true
+        # The old floating geometry may be remembered by Hyprland/app state.
+        # Wait for float state to settle, then explicitly overwrite geometry.
+        sleep 0.16
+
+        if [[ -n "$address" ]]; then
+            # resizewindowpixel targets the exact window and accepts screen
+            # percentages in the classic dispatcher syntax used by 0.53.x.
+            hyprctl dispatch resizewindowpixel "exact 70% 72%,address:$address" >/dev/null 2>&1 || true
+            sleep 0.03
+        else
+            hyprctl dispatch resizeactive "exact 70% 72%" >/dev/null 2>&1 || true
+        fi
+
+        # Center only after the explicit resize has landed.
         hyprctl dispatch centerwindow 1 >/dev/null 2>&1 || true
         ;;
     true|1)
         hyprctl dispatch togglefloating >/dev/null 2>&1 || exit 1
         ;;
     *)
-        # If JSON/state detection ever changes, preserve the core Super+V
-        # behavior instead of silently doing nothing.
+        # Preserve native toggle behavior if JSON output changes unexpectedly.
         hyprctl dispatch togglefloating >/dev/null 2>&1 || exit 1
         ;;
 esac
