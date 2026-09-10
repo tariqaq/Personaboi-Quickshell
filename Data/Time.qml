@@ -9,14 +9,37 @@ Singleton {
     }
 
     readonly property var now: clock.date
+    readonly property real synodicMonth: 29.53059
+    readonly property var referenceNewMoon: new Date(Date.UTC(2000, 0, 6, 18, 14))
 
-    readonly property real synodicDays: {
-        const synodicMonth = 29.53059;
-        const referenceNewMoon = new Date(Date.UTC(2000, 0, 6, 18, 14));
-        const diffMs = now - referenceNewMoon;
-        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    function moonAgeDaysFor(dateObj) {
+        const diffDays = (dateObj - referenceNewMoon) / 86400000;
         return ((diffDays % synodicMonth) + synodicMonth) % synodicMonth;
     }
+
+    function moonPhaseDegreeFor(dateObj) {
+        const age = moonAgeDaysFor(dateObj);
+        var degree = 360 - ((age / synodicMonth) * 360);
+        if (degree >= 355 || degree <= 5)
+            return 0;
+        if (degree >= 175 && degree <= 185)
+            return 180;
+        return degree;
+    }
+
+    function moonPhaseNameFor(dateObj) {
+        const age = moonAgeDaysFor(dateObj);
+        if (age < 1.85 || age >= 27.68) return "New Moon";
+        if (age < 5.54) return "Waxing Crescent";
+        if (age < 9.23) return "First Quarter";
+        if (age < 12.92) return "Waxing Gibbous";
+        if (age < 16.61) return "Full Moon";
+        if (age < 20.30) return "Waning Gibbous";
+        if (age < 23.99) return "Last Quarter";
+        return "Waning Crescent";
+    }
+
+    readonly property real synodicDays: moonAgeDaysFor(now)
 
     readonly property string time: {
         const h = now.getHours().toString().padStart(2, "0");
@@ -45,16 +68,6 @@ Singleton {
         return "Dark";
     }
 
-    readonly property real moonPhaseDegree: {
-        const cycleLength = 29.5;
-        const knownNewMoon = new Date('2024-03-10T15:00:00');
-        const daysSince = (now - knownNewMoon) / (1000 * 60 * 60 * 24);
-        const percentage = (daysSince % cycleLength) / cycleLength;
-        var degree = 360 - Math.floor(percentage * 360);
-        if (degree >= 355 || degree <= 5)
-            return 0;
-        if (degree >= 175 && degree <= 185)
-            return 180;
-        return degree;
-    }
+    readonly property real moonPhaseDegree: moonPhaseDegreeFor(now)
+    readonly property string moonPhaseName: moonPhaseNameFor(now)
 }
