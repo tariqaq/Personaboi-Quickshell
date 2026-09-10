@@ -1,80 +1,115 @@
-<h1 align="center">Persona Quickshell</h1>
+<h1 align="center">Personaboi Quickshell — Ubuntu 26.04</h1>
 
-<div align="center">
+A reproducible Ubuntu 26.04 + Hyprland setup based on **Yujon Pradhananga's Persona-Quickshell**, with the exact practical changes used on my 1920x1200 / 125% scaled NVIDIA laptop setup.
 
-[![QML](https://img.shields.io/badge/QML-Quickshell-7aa2f7?style=for-the-badge&logo=qt&logoColor=white)](https://quickshell.outfoxxed.me)
-[![Stars](https://img.shields.io/github/stars/Yujonpradhananga/Persona-Quickshell-?style=for-the-badge&color=e0af68&logoColor=white)](https://github.com/Yujonpradhananga/Persona-Quickshell-/stargazers)
-[![Hyprland](https://img.shields.io/badge/Hyprland-supported-2ac3de?style=for-the-badge&logoColor=white)](https://hyprland.org)
-[![Last Commit](https://img.shields.io/github/last-commit/Yujonpradhananga/Persona-Quickshell-?style=for-the-badge&color=9ece6a&logoColor=white)](https://github.com/Yujonpradhananga/Persona-Quickshell-/commits/main)
+> Upstream project: [Yujonpradhananga/Persona-Quickshell](https://github.com/Yujonpradhananga/Persona-Quickshell)
+>
+> This repository remains a fork and keeps the original project's credits and MIT license. The goal here is to make the theme straightforward to reproduce on a fresh Ubuntu 26.04 Desktop install.
 
-</div>
+## What this fork adds
 
+- Ubuntu 26.04 installation/bootstrap scripts.
+- A tested Hyprland configuration with 125% display scaling.
+- Persona autostart plus NetworkManager, Blueman, and Polkit session pieces.
+- NVIDIA settings used on the tested RTX 4060 laptop.
+- A Quickshell system tray with left-click and native right-click menus.
+- `UseQApplication` so tray context menus actually work.
+- The media capsule hides itself when no MPRIS player exists.
+- Clock sizing and Linux font substitutions for the 1920x1200 @ 1.25 layout.
+- JetBrainsMono Nerd Font installation for the battery/icon glyphs.
+- A documented fix for the stationary duplicate NVIDIA cursor.
+- A full troubleshooting record of the issues encountered during the Ubuntu setup.
 
+## Tested environment
 
-<https://github.com/user-attachments/assets/7e6fd291-dd28-48fa-83aa-81556558b132>
+| Component | Tested value |
+|---|---|
+| OS | Ubuntu 26.04 (Resolute) |
+| Hyprland | 0.53.3 / Ubuntu package `0.53.3+ds-4` |
+| Quickshell | 0.3.1 / PPA package `0.3.1ppa1` |
+| GPU | NVIDIA GeForce RTX 4060 Laptop GPU |
+| NVIDIA driver | 595.91.07 open-kernel stack |
+| Display | 1920x1200 @ 165 Hz |
+| Scale | 1.25 |
 
+Hyprland is installed from Ubuntu's **Universe** repository. Quickshell is installed from the **AvengeMedia/DankLinux PPA**.
 
+## Fresh-install quick path
 
+Keep the normal Ubuntu GNOME desktop installed as a fallback.
 
-
-
-
----
-
-## Dependencies
-
-### Plugins
-
-A custom cava plugin is used here:
-**Link:** <https://github.com/Yujonpradhananga/Qt6-Cava-plugin>
-
-You can build the plugin mannually or if you dont want to mannually build it and go through the installation process you can delete the `CavaVisualizer.qml` file and delete these lines 171-180 from the `WallpaperEngine.qml` file:
-
-```qml
-//delete these
-CavaVisualizer {
-  id: s1_cava
-  anchors {
-    left: parent.left
-    right: parent.right
-    top: parent.top
-    topMargin: 0
-  }
-  height: 555
-}
-```
----
-
-## AppLauncher
-
-The AppLauncher requires a hyprland keybind for it to work.
-Mine is set like this:
-
-```lua
-hl.bind(
-    mainMod .. " + R",
-    hl.dsp.exec_cmd("qs -c /path to where you have installed the repo/Persona-Quickshell/ ipc call searchapp toggle")
-)
+```bash
+git clone https://github.com/tariqaq/Personaboi-Quickshell.git
+cd Personaboi-Quickshell
+chmod +x setup/install.sh setup/verify.sh
+./setup/install.sh
 ```
 
----
+Read the NVIDIA warning printed by the installer before the first Hyprland login, then log out, choose **Hyprland** in GDM, and sign in.
 
-## Credits
-The wallpaper is from : https://steamcommunity.com/sharedfiles/filedetails/?id=3151551777
+Full instructions: **[`docs/UBUNTU-26.04-INSTALL.md`](docs/UBUNTU-26.04-INSTALL.md)**
 
-The greyscale shader is from [@snes19xx](https://github.com/snes19xx)'s [surface-dots](https://github.com/snes19xx/surface-dots/blob/main/.config/hypr/shaders/reading_mode.glsl).
+## Important controls
 
-The media player's album art implementation is taken from [Rexcrazy804](https://github.com/Rexcrazy804)'s [Zaphkiel](https://github.com/Rexcrazy804/Zaphkiel).
+| Binding / gesture | Action |
+|---|---|
+| `Super+Q` | Kitty terminal |
+| `Super+E` | Dolphin file manager |
+| `Super+C` | Close focused window |
+| `Super+V` | Toggle tiled/floating |
+| `Super+R` | Persona launcher |
+| `Super+M` | Leave Hyprland |
+| `Super+Print` | Select area and copy screenshot |
+| Drag Persona blade right | Activate Calendar / Stats / Shaders / Power |
 
-Shoutout to [blairxu13](https://github.com/blairxu13)'s [persona3-website](https://github.com/blairxu13/persona3-website).
-## Power Menu
+The Persona Power screen is opened by expanding the left-side blades and **dragging the Power blade to the right**. It is not activated by a normal click.
 
-The power menu currently uses loginctl commands, feel free to change them to your needs.
+## Repository layout
 
----
+```text
+Assets/                     Original Persona visual assets
+Data/                       Persona data/services
+Layers/                     Persona UI layers + custom Tray.qml
+Widgets/                    Persona widgets
+shell.qml                   Quickshell root; includes UseQApplication + tray
+setup/install.sh            Fresh Ubuntu 26.04 installer
+setup/verify.sh             Post-install sanity checker
+setup/hyprland.conf.in      Tested Hyprland config template
+setup/qt.conf               CavaMonitor/QML environment paths
+docs/UBUNTU-26.04-INSTALL.md
+docs/CUSTOMIZATIONS.md
+docs/TROUBLESHOOTING.md
+```
+
+## CAVA visualizer
+
+The wallpaper visualizer uses Yujon Pradhananga's custom Qt6 CAVA plugin. The installer builds both the CAVA core library and the plugin automatically.
+
+Manual upstream plugin repository:
+
+- <https://github.com/Yujonpradhananga/Qt6-Cava-plugin>
+
+## System tray
+
+This fork adds `Layers/Tray.qml` using Quickshell's StatusNotifier support. It appears only when tray items exist and supports application activation plus native right-click menus. `shell.qml` uses `//@ pragma UseQApplication`, which is required for those platform menus.
+
+## Notes about NVIDIA
+
+The supplied Hyprland config contains the NVIDIA environment settings that worked on the tested laptop. `nvidia_drm` modesetting was enabled (`Y`).
+
+**Do not blindly install `libnvidia-egl-gbm1`.** On the tested Ubuntu 26.04 NVIDIA 595 packages, doing so caused APT to remove the NVIDIA driver metapackage and `libnvidia-gl-595`; the driver stack then had to be restored. See [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md).
+
+## Upstream credits
+
+Original Persona-Quickshell by **Yujon Pradhananga**.
+
+The original project credits:
+
+- Wallpaper: Steam Workshop item 3151551777.
+- Greyscale shader: `snes19xx/surface-dots`.
+- Media-player album-art implementation: `Rexcrazy804/Zaphkiel`.
+- Persona website inspiration: `blairxu13/persona3-website`.
 
 ## License
 
-MIT License - feel free to use and modify as needed.
-
-Created by Yujon Pradhananga
+MIT, following the upstream project. See the repository license/history for the original work and attribution.
