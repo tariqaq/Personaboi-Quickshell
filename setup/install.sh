@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "$EUID" -eq 0 ]]; then
+  echo "Do not run setup/install.sh with sudo or as root." >&2
+  echo "Run it as your normal user; the script will request sudo only for system-level steps." >&2
+  exit 1
+fi
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET_QS="$HOME/.config/quickshell/persona"
 TARGET_HYPR="$HOME/.config/hypr"
