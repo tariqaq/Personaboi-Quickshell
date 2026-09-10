@@ -11,7 +11,10 @@ Item {
     property bool mounted: false
     property int localTab: activeBar
     property int activeShaderIndex: -1
+    property var shaderIntensities: [0.65, 0.85, 1.0]
+    property int pendingShaderIndex: -1
     onActiveBarChanged: localTab = activeBar
+
     FontLoader {
         id: bebasNeue
         source: Qt.resolvedUrl("../Assets/fonts/BebasNeue-Regular.ttf")
@@ -20,58 +23,61 @@ Item {
         id: montserrat
         source: Qt.resolvedUrl("../Assets/fonts/Montserrat-Light.ttf")
     }
+
     readonly property var revealContent: [
-        {
-            upper: ["Filter to reduce Bluelight"],
-            lower: "blue light filter",
-            portrait: Qt.resolvedUrl("../Assets/components/mainm.jpeg")
-        },
-        {
-            upper: ["Black and white only"],
-            lower: "grey scale filter",
-            portrait: Qt.resolvedUrl("../Assets/components/mainm2.jpeg")
-        },
-        {
-            upper: ["Invert all the colors cuz why not"],
-            lower: "inversion filter",
-            portrait: Qt.resolvedUrl("../Assets/components/mainf.jpeg")
-        },
+        { upper: ["Filter to reduce Bluelight"], lower: "blue light filter", portrait: Qt.resolvedUrl("../Assets/components/mainm.jpeg") },
+        { upper: ["Black and white only"], lower: "grey scale filter", portrait: Qt.resolvedUrl("../Assets/components/mainm2.jpeg") },
+        { upper: ["Invert all the colors cuz why not"], lower: "inversion filter", portrait: Qt.resolvedUrl("../Assets/components/mainf.jpeg") }
     ]
 
-    readonly property var shaderPaths: [Qt.resolvedUrl("../Assets/ScreenShaders/bluelight.frag").toString().replace("file://", ""), Qt.resolvedUrl("../Assets/ScreenShaders/grey.glsl").toString().replace("file://", ""), Qt.resolvedUrl("../Assets/ScreenShaders/invert.glsl").toString().replace("file://", "")]
+    readonly property var shaderPaths: [
+        Qt.resolvedUrl("../Assets/ScreenShaders/bluelight.frag").toString().replace("file://", ""),
+        Qt.resolvedUrl("../Assets/ScreenShaders/grey.glsl").toString().replace("file://", ""),
+        Qt.resolvedUrl("../Assets/ScreenShaders/invert.glsl").toString().replace("file://", "")
+    ]
+    readonly property string shaderHelper: Qt.resolvedUrl("../Scripts/apply-shader.sh").toString().replace("file://", "")
 
-    readonly property string offShader: Qt.resolvedUrl("../Assets/ScreenShaders/vibrant.glsl").toString().replace("file://", "")
+    function applyShader(index) {
+        shaderProc.command = ["bash", shaderHelper, shaderPaths[index], shaderIntensities[index].toString()];
+        shaderProc.startDetached();
+    }
 
     function toggleShader(index) {
         if (activeShaderIndex === index) {
             activeShaderIndex = -1;
-            shaderProc.command = [
-                "hyprctl",
-                "keyword",
-                "decoration:screen_shader",
-                "[[EMPTY]]"
-            ];
+            shaderProc.command = ["bash", shaderHelper, "off", "0"];
             shaderProc.startDetached();
         } else {
             activeShaderIndex = index;
-            shaderProc.command = [
-                "hyprctl",
-                "keyword",
-                "decoration:screen_shader",
-                shaderPaths[index]
-            ];
-            shaderProc.startDetached();
+            applyShader(index);
+        }
+    }
+
+    function setShaderIntensity(index, value) {
+        var next = shaderIntensities.slice();
+        next[index] = Math.max(0, Math.min(1, value));
+        shaderIntensities = next;
+        if (activeShaderIndex === index) {
+            pendingShaderIndex = index;
+            intensityApplyTimer.restart();
+        }
+    }
+
+    Timer {
+        id: intensityApplyTimer
+        interval: 70
+        repeat: false
+        onTriggered: {
+            if (pendingShaderIndex >= 0 && activeShaderIndex === pendingShaderIndex)
+                revealRoot.applyShader(pendingShaderIndex);
+            pendingShaderIndex = -1;
         }
     }
 
     Process {
         id: shaderProc
-        stdout: SplitParser {
-            onRead: data => console.log("STDOUT:", data)
-        }
-        stderr: SplitParser {
-            onRead: data => console.log("STDERR:", data)
-        }
+        stdout: SplitParser { onRead: data => console.log("STDOUT:", data) }
+        stderr: SplitParser { onRead: data => console.log("STDERR:", data) }
         onExited: (code, status) => console.log("Exited:", code, status)
     }
 
@@ -80,11 +86,7 @@ Item {
         color: "#ad282d36"
         z: 12
         opacity: revealRoot.revealed ? 1 : 0
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 320
-            }
-        }
+        Behavior on opacity { NumberAnimation { duration: 320 } }
     }
 
     Item {
@@ -96,45 +98,21 @@ Item {
         width: parent.width * 0.52
         clip: true
         opacity: revealRoot.revealed && revealRoot.mounted ? 0.96 : 0
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 350
-            }
-        }
-
+        Behavior on opacity { NumberAnimation { duration: 350 } }
         transform: [
             Translate {
                 x: revealRoot.revealed ? 0 : 78
-                Behavior on x {
-                    NumberAnimation {
-                        duration: 500
-                        easing.type: Easing.OutBack
-                        easing.overshoot: 2.0
-                    }
-                }
+                Behavior on x { NumberAnimation { duration: 500; easing.type: Easing.OutBack; easing.overshoot: 2.0 } }
             },
             Scale {
                 xScale: revealRoot.revealed ? 1 : 0.94
                 yScale: revealRoot.revealed ? 1 : 0.94
                 origin.x: portraitShell.width / 2
                 origin.y: portraitShell.height / 2
-                Behavior on xScale {
-                    NumberAnimation {
-                        duration: 500
-                        easing.type: Easing.OutBack
-                        easing.overshoot: 2.0
-                    }
-                }
-                Behavior on yScale {
-                    NumberAnimation {
-                        duration: 500
-                        easing.type: Easing.OutBack
-                        easing.overshoot: 2.0
-                    }
-                }
+                Behavior on xScale { NumberAnimation { duration: 500; easing.type: Easing.OutBack; easing.overshoot: 2.0 } }
+                Behavior on yScale { NumberAnimation { duration: 500; easing.type: Easing.OutBack; easing.overshoot: 2.0 } }
             }
         ]
-
         Image {
             source: revealRoot.revealContent[revealRoot.localTab].portrait
             anchors.fill: parent
@@ -142,14 +120,8 @@ Item {
             verticalAlignment: Image.AlignTop
             horizontalAlignment: Image.AlignRight
             transform: [
-                Rotation {
-                    angle: 0
-                },
-                Scale {
-                    xScale: 1.08
-                    yScale: 1.0
-                    origin.x: portraitShell.width
-                }
+                Rotation { angle: 0 },
+                Scale { xScale: 1.08; yScale: 1.0; origin.x: portraitShell.width }
             ]
         }
     }
@@ -163,63 +135,29 @@ Item {
         height: parent.height * 0.60
         enabled: revealRoot.revealed && revealRoot.mounted
         opacity: revealRoot.revealed && revealRoot.mounted ? 0.92 : 0
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 300
-            }
-        }
-
+        Behavior on opacity { NumberAnimation { duration: 300 } }
         transform: [
-            Rotation {
-                angle: -20
-                origin.x: 0
-                origin.y: revealPanel.height
-            },
+            Rotation { angle: -20; origin.x: 0; origin.y: revealPanel.height },
             Scale {
                 xScale: revealRoot.revealed ? 1 : 0.72
                 origin.x: 0
                 origin.y: revealPanel.height
-                Behavior on xScale {
-                    NumberAnimation {
-                        duration: 460
-                        easing.type: Easing.OutBack
-                        easing.overshoot: 3.0
-                    }
-                }
+                Behavior on xScale { NumberAnimation { duration: 460; easing.type: Easing.OutBack; easing.overshoot: 3.0 } }
             },
             Translate {
                 x: revealRoot.revealed ? 0 : -120
-                Behavior on x {
-                    NumberAnimation {
-                        duration: 460
-                        easing.type: Easing.OutBack
-                        easing.overshoot: 1.5
-                    }
-                }
+                Behavior on x { NumberAnimation { duration: 460; easing.type: Easing.OutBack; easing.overshoot: 1.5 } }
             }
         ]
 
         Rectangle {
             anchors.fill: parent
             gradient: Gradient {
-                GradientStop {
-                    position: 0.0
-                    color: "#f50f1c69"
-                }
-                GradientStop {
-                    position: 1.0
-                    color: "#f7081044"
-                }
+                GradientStop { position: 0.0; color: "#f50f1c69" }
+                GradientStop { position: 1.0; color: "#f7081044" }
             }
         }
-
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            height: 8
-            color: "#c4001a"
-        }
+        Rectangle { anchors.top: parent.top; anchors.left: parent.left; anchors.right: parent.right; height: 8; color: "#c4001a" }
 
         Row {
             id: tabRow
@@ -231,16 +169,13 @@ Item {
             anchors.rightMargin: parent.width * 0.10
             height: parent.height * 0.10
             spacing: 12
-
             Repeater {
                 model: ["Bluelight", "Greyscale", "Inversion"]
                 delegate: Item {
                     required property string modelData
                     required property int index
-
                     width: (tabRow.width - 24) / 3
                     height: tabRow.height
-
                     Rectangle {
                         id: tabRect
                         anchors.centerIn: parent
@@ -250,32 +185,16 @@ Item {
                         border.color: index === revealRoot.localTab ? "#4a8fff" : "#26ffffff"
                         border.width: 1
                         transformOrigin: Item.Center
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: 150
-                            }
-                        }
-                        Behavior on scale {
-                            NumberAnimation {
-                                duration: 120
-                                easing.type: Easing.OutCubic
-                            }
-                        }
-
+                        Behavior on color { ColorAnimation { duration: 150 } }
+                        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
                         Text {
                             anchors.centerIn: parent
                             text: parent.parent.modelData
                             font.pixelSize: 14
                             color: parent.parent.index === revealRoot.localTab ? "#111111" : "#66ffffff"
-                            Behavior on color {
-                                ColorAnimation {
-                                    duration: 150
-                                }
-                            }
+                            Behavior on color { ColorAnimation { duration: 150 } }
                         }
                     }
-
                     MouseArea {
                         anchors.fill: parent
                         onPressed: tabRect.scale = 0.90
@@ -293,13 +212,11 @@ Item {
             anchors.topMargin: parent.height * 0.01
             anchors.left: parent.left
             anchors.right: parent.right
-            height: parent.height * 0.42
+            height: parent.height * 0.38
             color: "#eb000000"
-
             Column {
                 anchors.centerIn: parent
                 spacing: 10
-
                 Repeater {
                     model: revealRoot.revealContent[revealRoot.localTab].upper
                     delegate: Text {
@@ -318,28 +235,17 @@ Item {
         Rectangle {
             id: lowerBar
             anchors.top: upperBar.bottom
-            anchors.topMargin: parent.height * 0.04
+            anchors.topMargin: parent.height * 0.025
             anchors.right: parent.right
             anchors.rightMargin: parent.width * 0.05
             width: parent.width * 0.60
-            height: parent.height * 0.20
+            height: parent.height * 0.14
             color: revealRoot.activeShaderIndex === revealRoot.localTab ? "#994a8fff" : "#eb000000"
             border.color: revealRoot.activeShaderIndex === revealRoot.localTab ? "#4a8fff" : "#26ffffff"
             border.width: 1
             transformOrigin: Item.Center
-
-            Behavior on color {
-                ColorAnimation {
-                    duration: 150
-                }
-            }
-            Behavior on scale {
-                NumberAnimation {
-                    duration: 120
-                    easing.type: Easing.OutCubic
-                }
-            }
-
+            Behavior on color { ColorAnimation { duration: 150 } }
+            Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
             Row {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
@@ -347,29 +253,19 @@ Item {
                 anchors.right: parent.right
                 anchors.rightMargin: 28
                 spacing: 12
-
                 Text {
                     text: revealRoot.revealContent[revealRoot.localTab].lower
                     font.family: montserrat.name
                     font.pixelSize: 18
                     color: "white"
-                    wrapMode: Text.Wrap
-                    horizontalAlignment: Text.AlignLeft
                 }
-
                 Text {
                     text: revealRoot.activeShaderIndex === revealRoot.localTab ? "● ON" : "○ OFF"
                     font.family: bebasNeue.name
                     font.pixelSize: 16
                     color: revealRoot.activeShaderIndex === revealRoot.localTab ? "#4a8fff" : "#66ffffff"
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 150
-                        }
-                    }
                 }
             }
-
             MouseArea {
                 anchors.fill: parent
                 onPressed: lowerBar.scale = 0.97
@@ -378,24 +274,74 @@ Item {
                 onClicked: revealRoot.toggleShader(revealRoot.localTab)
             }
         }
-    }
 
-    Row {
-        z: 14
-        x: parent.width * 0.06
-        y: parent.height * 0.10
-        spacing: 6
-        opacity: revealRoot.revealed ? 1 : 0
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 300
+        Item {
+            id: intensityPanel
+            anchors.top: lowerBar.bottom
+            anchors.topMargin: parent.height * 0.018
+            anchors.right: lowerBar.right
+            width: lowerBar.width
+            height: parent.height * 0.105
+
+            Rectangle {
+                anchors.fill: parent
+                color: "#e4081044"
+                border.color: revealRoot.activeShaderIndex === revealRoot.localTab ? "#8df6ff" : "#3656a8"
+                border.width: 1
             }
-        }
-
-        transform: Rotation {
-            angle: -20
-            origin.x: 0
-            origin.y: 0
+            Text {
+                id: intensityLabel
+                anchors.left: parent.left
+                anchors.leftMargin: 18
+                anchors.verticalCenter: parent.verticalCenter
+                text: "INTENSITY  " + Math.round(revealRoot.shaderIntensities[revealRoot.localTab] * 100) + "%"
+                font.family: bebasNeue.name
+                font.pixelSize: 16
+                color: "#d9f9ff"
+            }
+            Item {
+                id: sliderTrack
+                anchors.left: intensityLabel.right
+                anchors.leftMargin: 18
+                anchors.right: parent.right
+                anchors.rightMargin: 22
+                anchors.verticalCenter: parent.verticalCenter
+                height: 18
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 4
+                    color: "#263b83"
+                }
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width * revealRoot.shaderIntensities[revealRoot.localTab]
+                    height: 5
+                    color: "#8df6ff"
+                }
+                Rectangle {
+                    width: 16
+                    height: 22
+                    radius: 2
+                    x: Math.max(0, Math.min(sliderTrack.width - width, sliderTrack.width * revealRoot.shaderIntensities[revealRoot.localTab] - width / 2))
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: "#f7fbff"
+                    border.color: "#4a8fff"
+                    border.width: 2
+                    rotation: -8
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    function updateValue(mouseX) {
+                        revealRoot.setShaderIntensity(revealRoot.localTab, Math.max(0, Math.min(1, mouseX / width)));
+                    }
+                    onPressed: mouse => updateValue(mouse.x)
+                    onPositionChanged: mouse => { if (pressed) updateValue(mouse.x); }
+                }
+            }
         }
     }
 }
