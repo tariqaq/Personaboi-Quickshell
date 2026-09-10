@@ -21,6 +21,7 @@ ShellRoot {
     }
     Lay.Capsule {}
     Lay.Clock {}
+    Lay.Workspaces {}
     Lay.AppDrawer {}
     Lay.VolumeOsd {}
     Lay.BrightnessOsd {}
