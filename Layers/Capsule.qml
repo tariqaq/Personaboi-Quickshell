@@ -15,6 +15,8 @@ Scope {
         model: Quickshell.screens
         PanelWindow {
             id: pmusicWindow
+            visible: capsuleScope.mpris !== null
+
             anchors {
                 bottom: true
                 left: true
