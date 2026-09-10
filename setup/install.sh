@@ -40,7 +40,7 @@ sudo apt update
 sudo apt install -y \
   hyprland xdg-desktop-portal-hyprland hyprland-qtutils \
   git curl wget unzip rsync build-essential cmake \
-  kitty dolphin \
+  kitty nautilus \
   brightnessctl playerctl wl-clipboard grim slurp pavucontrol \
   network-manager-gnome blueman upower polkit-kde-agent-1 \
   xdg-user-dirs xdg-utils libnotify-bin jq \
@@ -123,7 +123,7 @@ Before first Hyprland login:
 
 Useful keys:
   Super+Q       terminal
-  Super+E       Dolphin
+  Super+E       GNOME Files
   Super+C       close focused window
   Super+V       toggle floating/tiled
   Super+R       Persona app launcher
