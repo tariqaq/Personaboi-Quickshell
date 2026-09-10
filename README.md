@@ -1,10 +1,25 @@
 <h1 align="center">Personaboi Quickshell — Ubuntu 26.04</h1>
 
-A reproducible Ubuntu 26.04 + Hyprland setup based on **Yujon Pradhananga's Persona-Quickshell**, with the exact practical changes used on my 1920x1200 / 125% scaled NVIDIA laptop setup.
+A reproducible Ubuntu 26.04 + Hyprland setup based on **Yujon Pradhananga's Persona-Quickshell**, with the practical fixes and shared configuration used on this setup.
 
 > Upstream project: [Yujonpradhananga/Persona-Quickshell](https://github.com/Yujonpradhananga/Persona-Quickshell)
 >
-> This repository remains a fork and keeps the original project's credits and MIT license. The goal here is to make the theme straightforward to reproduce on a fresh Ubuntu 26.04 Desktop install.
+> This repository remains a fork and keeps the original project's credits and MIT license. The goal here is to make the theme straightforward to reproduce and keep multiple machines in sync.
+
+## Current version
+
+**v1.1** — workspace tracking + shared updater workflow.
+
+See the full release history in **[`CHANGELOG.md`](CHANGELOG.md)**.
+
+### v1.1 focus
+
+- New Persona-styled workspace tracker in the top-left.
+- Workspaces `1 2 3 4 5` stay visible at all times.
+- If the active workspace is `6`–`10`, it becomes `1 2 3 4 5 ... N`, with `N` highlighted.
+- Workspace numbers are clickable.
+- New `pboi update` command keeps the live Persona files, Hyprland config, and Qt environment config synced with this repository.
+- Updates are backed up before applying, Hyprland config is verified, Quickshell is restarted when appropriate, and the pulled commit messages are shown afterward.
 
 ## What this fork adds
 
@@ -14,11 +29,15 @@ A reproducible Ubuntu 26.04 + Hyprland setup based on **Yujon Pradhananga's Pers
 - NVIDIA settings used on the tested RTX 4060 laptop.
 - A Quickshell system tray with left-click and native right-click menus.
 - `UseQApplication` so tray context menus actually work.
+- Persona workspace tracker and click-to-switch workspaces.
 - The media capsule hides itself when no MPRIS player exists.
+- Proper previous/next media symbols instead of missing-font placeholder text.
 - Clock sizing and Linux font substitutions for the 1920x1200 @ 1.25 layout.
-- JetBrainsMono Nerd Font installation for the battery/icon glyphs.
+- JetBrainsMono Nerd Font installation for battery/icon glyphs.
+- Standard `hyprland.conf` shader switching with `hyprctl keyword` instead of Lua-only `hyprctl eval`.
 - A documented fix for the stationary duplicate NVIDIA cursor.
-- A full troubleshooting record of the issues encountered during the Ubuntu setup.
+- `pboi` updater for keeping multiple installs on the same repo version.
+- A troubleshooting record of the issues encountered during the Ubuntu setup.
 
 ## Tested environment
 
@@ -45,9 +64,75 @@ chmod +x setup/install.sh setup/verify.sh
 ./setup/install.sh
 ```
 
-Read the NVIDIA warning printed by the installer before the first Hyprland login, then log out, choose **Hyprland** in GDM, and sign in.
+The installer also installs the updater to:
+
+```text
+~/.local/bin/pboi
+```
+
+After the normal logout/login into Hyprland, `pboi` should be available directly in the terminal.
 
 Full instructions: **[`docs/UBUNTU-26.04-INSTALL.md`](docs/UBUNTU-26.04-INSTALL.md)**
+
+## Updating an existing Personaboi install
+
+Once `pboi` is installed, keeping machines synced is simply:
+
+```bash
+pboi update
+```
+
+The updater:
+
+1. Fetches the latest `main` branch from this repository.
+2. Detects the newest Personaboi version and commit.
+3. Backs up the previous live configuration to `~/.local/share/personaboi/backups/previous/`.
+4. Applies the latest Persona tree to `~/.config/quickshell/persona/`.
+5. Applies the shared `hyprland.conf` template and `qt.conf`.
+6. Verifies the Hyprland configuration before finishing.
+7. Reloads Hyprland and restarts Quickshell when they are running.
+8. Prints the new version and recent commit messages that were pulled.
+
+Useful updater commands:
+
+```bash
+pboi version
+pboi update
+pboi changelog
+```
+
+### One-time updater bootstrap for installs made before v1.1
+
+If the machine was installed before `pboi` existed but still has a clone of this repository:
+
+```bash
+cd ~/Personaboi-Quickshell
+git pull
+mkdir -p ~/.local/bin
+install -Dm755 setup/pboi ~/.local/bin/pboi
+export PATH="$HOME/.local/bin:$PATH"
+pboi update
+```
+
+After that, future changes only need `pboi update`.
+
+## Workspace tracker
+
+The top-left tracker is intentionally compact instead of adding a full conventional bar.
+
+On workspaces 1–5:
+
+```text
+1  2  [3]  4  5
+```
+
+On workspaces 6–10:
+
+```text
+1  2  3  4  5  ...  [9]
+```
+
+The active workspace uses the existing Persona cyan/blue palette. Clicking any displayed workspace number switches to it directly through Quickshell's Hyprland service.
 
 ## Important controls
 
@@ -67,15 +152,18 @@ The Persona Power screen is opened by expanding the left-side blades and **dragg
 ## Repository layout
 
 ```text
-Assets/                     Original Persona visual assets
-Data/                       Persona data/services
-Layers/                     Persona UI layers + custom Tray.qml
-Widgets/                    Persona widgets
-shell.qml                   Quickshell root; includes UseQApplication + tray
-setup/install.sh            Fresh Ubuntu 26.04 installer
-setup/verify.sh             Post-install sanity checker
-setup/hyprland.conf.in      Tested Hyprland config template
-setup/qt.conf               CavaMonitor/QML environment paths
+VERSION                    Current Personaboi version
+CHANGELOG.md               Version history and release focus
+Assets/                    Original Persona visual assets
+Data/                      Persona data/services
+Layers/                    Persona UI layers + custom Tray/Workspaces
+Widgets/                   Persona widgets
+shell.qml                  Quickshell root
+setup/install.sh           Fresh Ubuntu 26.04 installer
+setup/pboi                 Shared updater command
+setup/verify.sh            Post-install sanity checker
+setup/hyprland.conf.in     Tested Hyprland config template
+setup/qt.conf              CavaMonitor/QML environment paths
 docs/UBUNTU-26.04-INSTALL.md
 docs/CUSTOMIZATIONS.md
 docs/TROUBLESHOOTING.md
@@ -91,7 +179,7 @@ Manual upstream plugin repository:
 
 ## System tray
 
-This fork adds `Layers/Tray.qml` using Quickshell's StatusNotifier support. It appears only when tray items exist and supports application activation plus native right-click menus. `shell.qml` uses `//@ pragma UseQApplication`, which is required for those platform menus.
+This fork adds `Layers/Tray.qml` using Quickshell's StatusNotifier support. It appears only when tray items exist and supports application activation plus native right-click menus. `shell.qml` uses `//@ pragma UseQApplication`, which is required for those platform menus. The shared layout currently places it in the bottom-right.
 
 ## Notes about NVIDIA
 
