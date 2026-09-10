@@ -20,6 +20,7 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - Fixed the Persona power menu using unsupported `loginctl poweroff` / `loginctl reboot` commands.
 - Fixed the workspace shell strip blocking clicks on application UI underneath it. The strip still reserves the top edge, but its input mask now only covers the visible workspace pill, so the rest of the top strip is click-through.
 - Fixed `Super+V` becoming unresponsive after the first floating-resize implementation embedded shell logic directly inside Hyprland's comma-delimited bind line. The state check now lives in `Scripts/toggle-floating.sh`, while the Hyprland bind simply launches that helper.
+- Hardened the `Super+V` helper so it accepts both boolean (`true`/`false`) and numeric (`1`/`0`) floating-state values, and falls back to Hyprland's native `togglefloating` if state detection ever fails. Resize/center failures can no longer make the toggle itself silently do nothing.
 
 ### Known / investigating
 - On the tested MSI Stealth laptop, brightness hotkeys emit `KEY_BRIGHTNESSDOWN/UP` on the ACPI `Video Bus` device and work in GNOME, but are still not reaching Hyprland's bind path. `brightnessctl` itself works correctly. Further input-stack diagnosis is required rather than adding more guessed keycodes.
