@@ -16,6 +16,10 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - `pboi version` and `pboi changelog` helpers.
 - A root `VERSION` marker for straightforward release tracking.
 
+### Changed
+- Made the workspace tracker smaller and moved it tight to the top-left corner.
+- The workspace layer now reserves a thin 30px strip across the top of the monitor, so tiled windows begin below the tracker instead of rendering underneath it.
+
 ### Fixed
 - Fixed `pboi update` exiting with `tmpdir: unbound variable` after an otherwise successful update. Temporary update cleanup now uses a script-level path that remains valid when the EXIT trap runs under `set -u`.
 
