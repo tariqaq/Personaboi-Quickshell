@@ -16,7 +16,8 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - `pboi version` and `pboi changelog` helpers.
 - A root `VERSION` marker for straightforward release tracking.
 - Root `AGENTS.md` handoff guide with the project workflow, live paths, updater behavior, compatibility lessons, privilege model, and rules for continuing Personaboi work in a fresh ChatGPT conversation.
-- MSI brightness-key fallback binds using raw keycodes `224` (down) and `225` (up), while preserving the normal `XF86MonBrightnessUp/Down` binds.
+- `Super+B` launches the browser currently registered as the XDG default.
+- MSI brightness-key fallback binds while preserving the normal `XF86MonBrightnessUp/Down` binds.
 
 ### Changed
 - Made the workspace tracker smaller and moved it tighter to the top-left corner.
@@ -25,9 +26,12 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - Fresh installation now validates sudo once up front with `sudo -v`; privileged operations remain limited to system package/repository work and `/usr/local` CAVA installation.
 - `setup/verify.sh` no longer invokes sudo for the NVIDIA DRM check when the sysfs value is readable as the current user.
 - `Super+E` now opens GNOME Files (`nautilus`) instead of Dolphin, and fresh installs explicitly install `nautilus`.
+- Corrected the MSI brightness fallback from Linux evdev codes 224/225 to their XKB keycodes 232/233, which are the values Hyprland's `code:` binding expects.
+- Power-menu shutdown/reboot now call `systemctl poweroff` / `systemctl reboot`, while logout exits the current Hyprland session with `hyprctl dispatch exit`.
 
 ### Fixed
 - Fixed `pboi update` exiting with `tmpdir: unbound variable` after an otherwise successful update. Temporary update cleanup now uses a script-level path that remains valid when the EXIT trap runs under `set -u`.
+- Fixed the Persona power menu using unsupported `loginctl poweroff` / `loginctl reboot` commands.
 
 ### Included fixes since the initial fork setup
 - System tray with native right-click menus and `UseQApplication`.
