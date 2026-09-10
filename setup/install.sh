@@ -20,6 +20,14 @@ if [[ "${ID:-}" != "ubuntu" || "${VERSION_ID:-}" != "26.04" ]]; then
   exit 1
 fi
 
+if ! command -v sudo >/dev/null 2>&1; then
+  echo "sudo is required for the system installation steps." >&2
+  exit 1
+fi
+
+echo "Requesting administrator privileges for package and /usr/local installation steps..."
+sudo -v
+
 printf '\n[1/7] Enabling Ubuntu Universe and installing Hyprland/runtime packages...\n'
 sudo add-apt-repository -y universe
 sudo apt update
@@ -102,7 +110,7 @@ Installation files are in place.
 
 Before first Hyprland login:
   1. If you use NVIDIA, make sure your normal Ubuntu NVIDIA driver is installed.
-  2. Verify: sudo cat /sys/module/nvidia_drm/parameters/modeset
+  2. Verify: cat /sys/module/nvidia_drm/parameters/modeset
      It should print Y on the tested NVIDIA setup.
   3. DO NOT install libnvidia-egl-gbm1 separately if APT proposes removing your NVIDIA driver metapackage.
   4. Log out of GNOME, choose Hyprland in GDM, and sign in.
@@ -122,6 +130,8 @@ Updates:
   pboi update      pull and apply the newest shared setup
   pboi version     show the installed Personaboi version
   pboi changelog   show the installed changelog
+
+Run pboi as your normal user, never with sudo.
 
 If pboi is not found in the current shell immediately after this fresh install,
 log out and back in once so Ubuntu adds ~/.local/bin to PATH.
