@@ -12,6 +12,8 @@ A reproducible Ubuntu 26.04 + Hyprland setup based on **Yujon Pradhananga's Pers
 
 See the full release history in **[`CHANGELOG.md`](CHANGELOG.md)**.
 
+For continuing this project in a fresh ChatGPT/agent conversation, start by reading **[`AGENTS.md`](AGENTS.md)**. It records the project flow, live paths, updater rules, compatibility lessons, privilege model, and shared-vs-personal customization policy.
+
 ### v1.1 focus
 
 - New Persona-styled workspace tracker in the top-left.
@@ -64,6 +66,8 @@ chmod +x setup/install.sh setup/verify.sh
 ./setup/install.sh
 ```
 
+Run the installer as your normal user, not with `sudo`; it requests sudo only for the system-level steps that need it.
+
 The installer also installs the updater to:
 
 ```text
@@ -81,6 +85,8 @@ Once `pboi` is installed, keeping machines synced is simply:
 ```bash
 pboi update
 ```
+
+Run `pboi` as the normal desktop user, never with `sudo`.
 
 The updater:
 
@@ -118,7 +124,7 @@ After that, future changes only need `pboi update`.
 
 ## Workspace tracker
 
-The top-left tracker is intentionally compact instead of adding a full conventional bar.
+The top-left tracker is intentionally compact instead of adding a full conventional bar. Its reserved top strip is kept thin, and Hyprland uses a smaller top outer gap than the other edges so tiled windows sit close underneath it.
 
 On workspaces 1–5:
 
@@ -154,6 +160,7 @@ The Persona Power screen is opened by expanding the left-side blades and **dragg
 ```text
 VERSION                    Current Personaboi version
 CHANGELOG.md               Version history and release focus
+AGENTS.md                  ChatGPT/agent project handoff context
 Assets/                    Original Persona visual assets
 Data/                      Persona data/services
 Layers/                    Persona UI layers + custom Tray/Workspaces
@@ -161,6 +168,7 @@ Widgets/                   Persona widgets
 shell.qml                  Quickshell root
 setup/install.sh           Fresh Ubuntu 26.04 installer
 setup/pboi                 Shared updater command
+setup/update-hook.sh       Future release migration hook
 setup/verify.sh            Post-install sanity checker
 setup/hyprland.conf.in     Tested Hyprland config template
 setup/qt.conf              CavaMonitor/QML environment paths
