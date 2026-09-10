@@ -16,6 +16,7 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - `pboi version` and `pboi changelog` helpers.
 - A root `VERSION` marker for straightforward release tracking.
 - Root `AGENTS.md` handoff guide with the project workflow, live paths, updater behavior, compatibility lessons, privilege model, and rules for continuing Personaboi work in a fresh ChatGPT conversation.
+- MSI brightness-key fallback binds using raw keycodes `224` (down) and `225` (up), while preserving the normal `XF86MonBrightnessUp/Down` binds.
 
 ### Changed
 - Made the workspace tracker smaller and moved it tighter to the top-left corner.
