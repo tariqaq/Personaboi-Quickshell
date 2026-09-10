@@ -23,16 +23,16 @@ Scope {
             required property var modelData
             screen: modelData
 
-            // A thin full-width shell strip reserves the top edge so tiled
-            // windows always begin below the workspace indicator.
+            // Thin full-width reserved strip: enough room for the tracker,
+            // but intentionally compact so tiled windows sit close below it.
             anchors {
                 top: true
                 left: true
                 right: true
             }
 
-            implicitHeight: 30
-            exclusiveZone: 30
+            implicitHeight: 24
+            exclusiveZone: 24
             color: "transparent"
             visible: Hyprland.connected
             focusable: false
@@ -45,12 +45,12 @@ Scope {
                 id: workspacePill
                 anchors.left: parent.left
                 anchors.top: parent.top
-                anchors.leftMargin: 4
-                anchors.topMargin: 3
+                anchors.leftMargin: 2
+                anchors.topMargin: 1
 
-                width: workspaceRow.implicitWidth + 12
-                height: 24
-                radius: 7
+                width: workspaceRow.implicitWidth + 10
+                height: 21
+                radius: 6
                 color: "#d90c0f1d"
                 border.width: 1
                 border.color: "#6652A4CD"
@@ -68,7 +68,7 @@ Scope {
                     id: workspaceRow
                     anchors.centerIn: parent
                     anchors.horizontalCenterOffset: 1
-                    spacing: 2
+                    spacing: 1
 
                     Repeater {
                         model: workspaceScope.shownWorkspaces
@@ -80,8 +80,8 @@ Scope {
                             readonly property bool isNumber: typeof modelData === "number"
                             readonly property bool isActive: isNumber && modelData === workspaceScope.currentWorkspace
 
-                            width: modelData === "..." ? 18 : (modelData === 10 ? 27 : 23)
-                            height: 20
+                            width: modelData === "..." ? 16 : (modelData === 10 ? 25 : 21)
+                            height: 18
 
                             Rectangle {
                                 id: workspaceChip
@@ -104,7 +104,7 @@ Scope {
                                     text: workspaceItem.modelData
                                     color: workspaceItem.isActive ? Dat.Colors.color0 : Dat.Colors.foreground
                                     font.family: "JetBrainsMono Nerd Font"
-                                    font.pixelSize: workspaceItem.modelData === "..." ? 10 : 11
+                                    font.pixelSize: workspaceItem.modelData === "..." ? 9 : 10
                                     font.bold: workspaceItem.isActive
                                 }
                             }
