@@ -23,6 +23,7 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - Reduced only the Hyprland **top** outer gap to 6px while keeping right/bottom/left outer gaps at 20px, so tiled windows sit much closer to the workspace tracker without changing the other screen edges.
 - Fresh installation now validates sudo once up front with `sudo -v`; privileged operations remain limited to system package/repository work and `/usr/local` CAVA installation.
 - `setup/verify.sh` no longer invokes sudo for the NVIDIA DRM check when the sysfs value is readable as the current user.
+- `Super+E` now opens GNOME Files (`nautilus`) instead of Dolphin, and fresh installs explicitly install `nautilus`.
 
 ### Fixed
 - Fixed `pboi update` exiting with `tmpdir: unbound variable` after an otherwise successful update. Temporary update cleanup now uses a script-level path that remains valid when the EXIT trap runs under `set -u`.
