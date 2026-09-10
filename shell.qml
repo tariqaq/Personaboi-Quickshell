@@ -1,3 +1,4 @@
+//@ pragma UseQApplication
 //@ pragma QmlImportPath: "."
 //@ pragma Env QSG_RENDER_LOOP=threaded
 //@ pragma Env QT_QUICK_FLICKABLE_WHEEL_DECELERATION=10000
@@ -24,4 +25,5 @@ ShellRoot {
     Lay.VolumeOsd {}
     Lay.BrightnessOsd {}
     Lay.Searchapp {}
+    Lay.Tray {}
 }

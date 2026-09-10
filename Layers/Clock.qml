@@ -8,7 +8,7 @@ import qs.Widgets.Info as Info
 Scope {
     id: clockScope
 
-    readonly property real vw: 500 / 26.0417
+    readonly property real vw: (500 / 26.0417) / 1.25
 
     Variants {
         model: Quickshell.screens
@@ -17,8 +17,8 @@ Scope {
             required property var modelData
             screen: modelData
             color: "transparent"
-            implicitWidth: 500
-            implicitHeight: 200
+            implicitWidth: 400
+            implicitHeight: 160
 
             anchors {
                 top: true
@@ -92,7 +92,7 @@ Scope {
                     anchors.rightMargin: clockScope.vw * 12
                     anchors.topMargin: clockScope.vw * 0.2
                     text: Dat.Time.time
-                    font.family: "Microsoft Yahei"
+                    font.family: "Noto Sans"
                     font.pixelSize: clockScope.vw * 6
                     font.weight: Font.Bold
                     font.letterSpacing: -clockScope.vw * 0.21
@@ -111,7 +111,7 @@ Scope {
                     width: clockScope.vw * 2
                     text: Dat.Time.weekday
                     horizontalAlignment: Text.AlignHCenter
-                    font.family: "Bahnschrift Condensed"
+                    font.family: "Noto Sans Condensed"
                     font.pixelSize: clockScope.vw * 1.45
                     font.weight: Font.Normal
                     font.letterSpacing: -clockScope.vw * 0.1
@@ -148,7 +148,7 @@ Scope {
                     width: clockScope.vw * 5.5
                     text: Dat.Time.daytime
                     horizontalAlignment: Text.AlignHCenter
-                    font.family: "Microsoft Yahei"
+                    font.family: "Noto Sans"
                     font.pixelSize: clockScope.vw * 1.3
                     font.weight: Font.Bold
                     font.letterSpacing: -clockScope.vw * 0.1042
@@ -299,7 +299,7 @@ Scope {
             anchors.top: parent.top
             anchors.right: parent.right
             text: Dat.Time.date
-            font.family: "Microsoft Yahei"
+            font.family: "Noto Sans"
             font.pixelSize: clockScope.vw * 6.75
             font.weight: Font.Bold
             font.letterSpacing: -clockScope.vw * 0.75
