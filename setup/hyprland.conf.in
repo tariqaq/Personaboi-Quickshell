@@ -190,7 +190,10 @@ bind = $mainMod, M, exec, command -v hyprshutdown >/dev/null 2>&1 && hyprshutdow
 bind = $mainMod, E, exec, $fileManager
 # Launch whichever browser is registered as the current XDG default.
 bind = $mainMod, B, exec, sh -c 'browser="$(xdg-settings get default-web-browser)"; [ -n "$browser" ] && gtk-launch "${browser%.desktop}"'
-bind = $mainMod, V, togglefloating,
+# Toggle floating. When a tiled window becomes floating, resize it to a
+# clearly floating 70% x 72% of the monitor and center it. Toggling back to
+# tiled leaves geometry management to the layout as normal.
+bind = $mainMod, V, exec, sh -c 'floating="$(hyprctl activewindow -j | jq -r ".floating // empty")"; if [ "$floating" = "false" ]; then hyprctl --batch "dispatch togglefloating; dispatch resizeactive exact 70% 72%; dispatch centerwindow 1"; elif [ "$floating" = "true" ]; then hyprctl dispatch togglefloating; fi'
 bind = $mainMod, R, exec, qs -c __HOME__/.config/quickshell/persona ipc call searchapp toggle
 bind = $mainMod, P, pseudo,
 bind = $mainMod, J, togglesplit,
