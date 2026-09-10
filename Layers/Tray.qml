@@ -14,7 +14,7 @@ Scope {
             screen: modelData
 
             anchors {
-                top: true
+                bottom: true
                 right: true
             }
 
@@ -30,7 +30,7 @@ Scope {
             WlrLayershell.namespace: "persona.tray"
 
             margins {
-                top: 100
+                bottom: 18
                 right: 18
             }
 
