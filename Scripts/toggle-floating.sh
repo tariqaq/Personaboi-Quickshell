@@ -14,10 +14,10 @@ fi
 
 case "$floating" in
     false|0)
-        # Use the dispatcher sequence documented for classic hyprland.conf.
-        # togglefloating happens first so a later resize/center failure cannot
-        # leave Super+V completely dead.
+        # resizeactive/centerwindow operate on floating geometry. Give Hyprland
+        # a brief moment to commit the tiled -> floating transition first.
         hyprctl dispatch togglefloating >/dev/null 2>&1 || exit 1
+        sleep 0.08
         hyprctl dispatch resizeactive exact 70% 72% >/dev/null 2>&1 || true
         hyprctl dispatch centerwindow 1 >/dev/null 2>&1 || true
         ;;
