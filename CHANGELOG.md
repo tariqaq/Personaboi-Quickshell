@@ -16,6 +16,9 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - `pboi version` and `pboi changelog` helpers.
 - A root `VERSION` marker for straightforward release tracking.
 
+### Fixed
+- Fixed `pboi update` exiting with `tmpdir: unbound variable` after an otherwise successful update. Temporary update cleanup now uses a script-level path that remains valid when the EXIT trap runs under `set -u`.
+
 ### Included fixes since the initial fork setup
 - System tray with native right-click menus and `UseQApplication`.
 - Tray moved to the bottom-right.
