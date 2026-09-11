@@ -13,18 +13,19 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - Ubuntu `brightness-udev` support and `video` group migration for proper unprivileged backlight control instead of embedding `sudo` or passwordless root access in the UI.
 
 ### Changed
-- `Super+V` now uses the simpler classic Hyprland batch pattern used successfully by other 0.x users: `togglefloating`, `resizeactive exact 68% 70%`, then `centerwindow` in one compositor batch. Toggling an already-floating window simply returns it to tiled mode.
-- The brightness corner now uses a fixed shell surface plus a click-through input mask. This lets the circle animate fully off-screen without clipping while preventing the invisible surface from blocking application clicks.
-- The brightness panel now auto-dismisses after pointer inactivity. This applies both when the circle is merely revealed and after the slider is opened or adjusted; the user no longer has to click the brightness circle again to close it.
+- `Super+V` uses the simple classic Hyprland batch pattern: `togglefloating`, `resizeactive exact 68% 70%`, then `centerwindow` in one compositor batch. Toggling an already-floating window simply returns it to tiled mode.
+- The brightness corner uses a fixed shell surface plus a click-through input mask so the overlay does not block unrelated application UI.
+- The brightness control now auto-dismisses after about 1.4 seconds of inactivity, both when merely revealed and after opening/adjusting the slider. Slider dragging temporarily pauses dismissal.
+- The brightness circle now animates through `anchors.topMargin` rather than `y`, because its top anchor owns vertical positioning.
 
 ### Fixed
-- Fixed the brightness slider failing on systems where `brightnessctl` required sudo. Ubuntu 26.04 packages the permission rules separately as `brightness-udev`; existing installs now receive that package and the desktop user is added to the `video` group. A logout/login is required once for new supplementary-group membership to take effect.
-- Fixed the top-right brightness circle disappearing abruptly during auto-hide. It now reverses the same slide animation used on reveal instead of being clipped by a shrinking PanelWindow.
-- Removed the increasingly complex fullscreen-state, monitor-geometry, repeated-resize, and sleep logic from `Super+V`; Hyprland community examples show the float+resize+center sequence working reliably when issued as one `hyprctl --batch` request.
+- Fixed the brightness slider failing on systems where `brightnessctl` required sudo. Ubuntu 26.04 packages the permission rules separately as `brightness-udev`; existing installs receive that package and the desktop user is added to the `video` group. A logout/login is required once for new supplementary-group membership to take effect.
+- Fixed the top-right brightness circle remaining permanently visible. The previous implementation tried to animate `y` while the item was anchored to the top; the anchor controlled the position, so the `y` animation could not move it off-screen.
+- Fixed `Super+V` never reaching the resize path for tiled windows. The helper used `jq -r '.floating // empty'`; jq's `//` operator treats boolean `false` like a missing value, so a tiled window produced an empty string and fell through to plain `togglefloating`. It now reads `.floating` directly, allowing the float+resize+center branch to execute.
 
 ### Notes
 - The brightness control only accepts pointer input over the tiny hotspot, visible circle, and open slider. The rest of the fixed top-right shell window is click-through.
-- This release keeps the existing unresolved MSI brightness-key issue separate; the brightness slider works through normal unprivileged `brightnessctl` access.
+- This release keeps the unresolved MSI brightness-key issue separate; the brightness slider works through normal unprivileged `brightnessctl` access.
 - Personaboi deliberately does not make `brightnessctl` setuid and does not add passwordless sudo rules for it.
 
 ## v1.3 — 2026-09-11
