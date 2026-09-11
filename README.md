@@ -8,19 +8,18 @@ A reproducible Ubuntu 26.04 + Hyprland setup based on **Yujon Pradhananga's Pers
 
 ## Current version
 
-**v1.3** — richer Persona utilities, shader controls, expanded stats, and a 10-day lunar calendar.
+**v1.4** — direct top-right brightness control and improved floating-window state handling.
 
 See the full release history in **[`CHANGELOG.md`](CHANGELOG.md)**.
 
 For continuing this project in a fresh ChatGPT/agent conversation, start by reading **[`AGENTS.md`](AGENTS.md)**.
 
-### v1.3 focus
+### v1.4 focus
 
-- Persona-styled intensity slider for Bluelight, Greyscale, and Inversion screen shaders.
-- Expanded Stats page with host/kernel/uptime/load/process/GPU telemetry in addition to CPU/RAM/disk.
-- Calendar expanded from 7 to 10 diagonal days.
-- Desktop and calendar moon graphics share one local synodic-cycle model.
-- Moon phase calculation is local and offline; it does not call a weather/astronomy service.
+- Push the pointer into the top-right top edge to reveal a Persona-styled brightness circle.
+- Click the circle to drop a compact brightness slider that controls `brightnessctl` directly.
+- The brightness control does not reserve desktop space and auto-hides like the left-side Persona drawer.
+- `Super+V` now clears maximize/fullscreen state before applying floating geometry so maximized client state cannot keep the new floating window nearly fullscreen.
 
 ## What this fork adds
 
@@ -37,6 +36,7 @@ For continuing this project in a fresh ChatGPT/agent conversation, start by read
 - Per-shader intensity controls implemented through runtime-generated cache shaders.
 - 10-day Persona calendar with locally calculated moon phases.
 - Expanded system telemetry panel.
+- Top-right Persona brightness control backed by `brightnessctl`.
 - `pboi` updater for keeping multiple installs on the same repo version.
 
 ## Tested environment
@@ -125,6 +125,12 @@ The shader menu keeps the original Persona layout and adds an intensity rail for
 
 with the selected intensity baked into a constant, then points Hyprland at that runtime file. The source shaders in the repository remain unchanged at runtime.
 
+## Top-right brightness control
+
+A tiny hotspot sits on the top-right edge. Pushing the pointer into it reveals a Persona-style circular brightness control. Clicking the circle expands a compact slider below it. Dragging the slider calls `brightnessctl set N%`; because the existing Brightness OSD reads the backlight device directly, it also reflects slider-driven changes.
+
+The hidden state occupies only a very small edge trigger and reserves no workspace area.
+
 ## Moon phase model
 
 Both the desktop clock moon and the calendar moon icons use `Data/Time.qml`. The model uses the mean synodic month (29.53059 days) from a reference new moon and calculates phase from the requested date. It is lightweight, offline, and suitable for the visual indicator, but it is not intended as a high-precision astronomical ephemeris.
@@ -137,11 +143,12 @@ Both the desktop clock moon and the calendar moon icons use `Data/Time.qml`. The
 | `Super+E` | GNOME Files (`nautilus`) |
 | `Super+B` | Default web browser |
 | `Super+C` | Close focused window |
-| `Super+V` | Toggle tiled/floating; newly floating windows shrink and center |
+| `Super+V` | Toggle tiled/floating; newly floating windows are forced smaller and centered |
 | `Super+R` | Persona launcher |
 | `Super+M` | Leave Hyprland |
 | `Super+Print` | Select area and copy screenshot |
 | Drag Persona blade right | Activate Calendar / Stats / Shaders / Power |
+| Push pointer to top-right edge | Reveal brightness control |
 
 ## Repository layout
 
@@ -151,7 +158,7 @@ CHANGELOG.md               Version history
 AGENTS.md                  ChatGPT/agent project handoff context
 Assets/                    Original Persona assets + screen shaders
 Data/                      Persona data/services including shared time/moon model
-Layers/                    Persona UI layers
+Layers/                    Persona UI layers, including BrightnessCorner.qml
 Scripts/                   Runtime helpers such as floating/shader controls
 Widgets/                   Persona widgets and system-info providers
 shell.qml                  Quickshell root
