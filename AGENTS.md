@@ -40,6 +40,8 @@ For Hyprland, Quickshell, systemd, brightness/backlight, Wayland input, or simil
 6. Distinguish parser/argument problems from compositor behavior. Check the documented argument shape and shell quoting instead of guessing.
 7. Do not claim a fix works until the user confirms it on the actual machine when the issue depends on compositor/runtime behavior.
 8. Preserve working behavior while debugging. If the base toggle/action works but an enhancement does not, keep the base action reliable and isolate the enhancement.
+9. Be careful with boolean data in shell/JQ glue. `jq`'s `//` operator treats `false` like a missing/null value, so do not use expressions like `.floating // empty` when `false` is a meaningful state. Read `.floating` directly or test for field existence explicitly.
+10. In QML, do not animate `x`/`y` on an axis already controlled by anchors and expect it to move. Animate the relevant anchor margin (for example `anchors.topMargin`) or use a `Translate` transform instead. This mattered for the top-right brightness pill.
 
 Hyprland's own documentation supports batching multiple control calls through `hyprctl --batch`, and versioned dispatcher docs should be consulted for the exact `togglefloating`, `resizeactive`, `centerwindow`, etc. syntax before patching.
 
@@ -151,9 +153,9 @@ cursor {
 
   Do not change this back to `1` for this tested configuration unless troubleshooting a different GPU.
 - Do not install standalone `libnvidia-egl-gbm1` if APT proposes removing the Ubuntu NVIDIA driver metapackage / `libnvidia-gl-*` packages.
-- `Super+V` toggles tiled/floating. The intended enhancement is that a newly floating window becomes visibly smaller and centered. This area has required several iterations; if it fails again, manually run and inspect the exact simple `hyprctl` dispatcher sequence before making any further repo change. Do not stack more speculative geometry/fullscreen workarounds.
+- `Super+V` toggles tiled/floating. The intended enhancement is that a newly floating window becomes visibly smaller and centered. The correct state read is `jq -r '.floating'`; do not use `.floating // empty`, because that turns the meaningful boolean `false` into no output and skips the resize branch. The current simple community-style action is `togglefloating; resizeactive exact 68% 70%; centerwindow` in one `hyprctl --batch` call.
 - Brightness hotkeys remain under investigation on the tested MSI Stealth. `brightnessctl` works, and `evtest` shows `KEY_BRIGHTNESSDOWN/UP` from the ACPI `Video Bus`, but those events are not currently reaching Hyprland's bind path. Keep normal XF86 binds and the current fallback until a proper input-stack fix is confirmed; do not keep guessing new keycodes.
-- The top-right brightness corner is a Quickshell overlay backed by `brightnessctl`. Ubuntu brightness permissions are handled through `brightness-udev` / normal group permissions rather than setuid or passwordless sudo.
+- The top-right brightness corner is a Quickshell overlay backed by `brightnessctl`. Ubuntu brightness permissions are handled through `brightness-udev` / normal group permissions rather than setuid or passwordless sudo. Its circle is top-anchored, so reveal/hide motion must use `anchors.topMargin` (or a transform), not `y`.
 
 ## Workspace tracker
 
