@@ -77,10 +77,9 @@ WlrLayershell {
             coverageProc.running = true
     }
 
-    // One 60 Hz cadence now owns both animated shader time and parallax state.
+    // One 60 Hz cadence owns both animated shader time and parallax state.
     // Raw pointer motion only updates pending values; the expensive final
-    // parallax ShaderEffect is dirtied at most once per wallpaper tick instead
-    // of potentially at the monitor/pointer event rate.
+    // parallax ShaderEffect is dirtied at most once per wallpaper tick.
     Timer {
         id: wallpaperTicker
         interval: 16
@@ -167,10 +166,7 @@ WlrLayershell {
         fragmentShader: Qt.resolvedUrl("../Assets/shaders/ripple/ripple.frag.qsb")
     }
 
-    // Required intermediate texture, rendered at 80% linear resolution.
-    // The final wallpaper surface remains full-size; smooth sampling hides the
-    // small reduction well for this soft ripple/stars source while cutting the
-    // offscreen pixel count to about 64% of native.
+    // Required native-resolution intermediate texture for Stars/Rain.
     ShaderEffectSource {
         id: s0_clouds_out
         sourceItem: s0_bg_clouds
@@ -178,8 +174,6 @@ WlrLayershell {
         visible: false
         hideSource: true
         live: true
-        smooth: true
-        textureSize: Qt.size(Math.max(1, Math.round(width * 0.8)), Math.max(1, Math.round(height * 0.8)))
     }
 
     Item {
@@ -235,9 +229,7 @@ WlrLayershell {
         }
     }
 
-    // The final composite texture is also reduced modestly before the parallax
-    // pass. The visible parallax ShaderEffect itself still renders at full
-    // window size, so desktop/app refresh behavior is unchanged.
+    // Required native-resolution composite texture for final Parallax.
     ShaderEffectSource {
         id: s1_out
         sourceItem: s1_composite
@@ -245,8 +237,6 @@ WlrLayershell {
         visible: false
         hideSource: true
         live: true
-        smooth: true
-        textureSize: Qt.size(Math.max(1, Math.round(width * 0.8)), Math.max(1, Math.round(height * 0.8)))
     }
 
     ShaderEffect {
