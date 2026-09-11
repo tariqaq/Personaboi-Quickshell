@@ -19,12 +19,29 @@ Do **not** make a one-off local-only customization unless the user explicitly sa
 
 1. Inspect the current repo file(s) first.
 2. Patch the repo directly on `main` unless the user asks for a branch/PR.
-3. Keep the change compatible with Ubuntu 26.04 and standard `hyprland.conf` syntax.
+3. Keep the change compatible with Ubuntu 26.04 and the actually installed Hyprland/Quickshell versions.
 4. Update `CHANGELOG.md` when the change is user-visible.
 5. Do **not** bump `VERSION` unless the user explicitly says to start/bump a new version. Keep stacking normal fixes/features into the current version until then.
 6. The user and friend then apply it with `pboi update`.
 7. Prefer native Quickshell/Hyprland APIs over shell polling when available.
 8. Preserve upstream Persona styling rather than adding generic Waybar-looking UI.
+
+## Research and troubleshooting discipline
+
+Do not over-engineer fixes before checking whether the compositor/shell community already has a simple, proven pattern.
+
+For Hyprland, Quickshell, systemd, brightness/backlight, Wayland input, or similar integration work:
+
+1. Check the **official docs first**, and use docs matching the installed version whenever syntax or behavior changed between releases. The tested Hyprland package is currently in the classic `hyprland.conf` era, so do not blindly copy newer Lua-only examples.
+2. Search upstream GitHub issues/discussions and community examples for the exact behavior or failure before inventing a custom workaround.
+3. Prefer the **smallest proven solution**. Do not add state machines, repeated sleeps, fullscreen resets, monitor geometry parsing, helper layers, or extra privilege logic unless there is evidence they are actually required.
+4. If a fix has already failed once or twice, stop stacking more speculative changes. Reproduce the underlying command manually and inspect its real output first.
+5. For CLI-driven behavior, test the exact command that the config/helper will run. Example: for a Hyprland multi-dispatch action, verify the exact `hyprctl` command manually before wrapping it in a script or bind.
+6. Distinguish parser/argument problems from compositor behavior. Check the documented argument shape and shell quoting instead of guessing.
+7. Do not claim a fix works until the user confirms it on the actual machine when the issue depends on compositor/runtime behavior.
+8. Preserve working behavior while debugging. If the base toggle/action works but an enhancement does not, keep the base action reliable and isolate the enhancement.
+
+Hyprland's own documentation supports batching multiple control calls through `hyprctl --batch`, and versioned dispatcher docs should be consulted for the exact `togglefloating`, `resizeactive`, `centerwindow`, etc. syntax before patching.
 
 ## Update workflow
 
@@ -59,7 +76,7 @@ State/backups live under:
 ~/.local/share/personaboi/
 ```
 
-If a future release needs a dependency/package migration, add it to `setup/update-hook.sh` so existing clients can prepare during `pboi update`.
+If a future release needs a dependency/package migration, add it to `setup/update-hook.sh` so existing clients can prepare during `pboi update`. Migrations must be release-specific and idempotent; `pboi update` is not a general-purpose package upgrade command.
 
 ## Fresh install workflow
 
@@ -134,8 +151,9 @@ cursor {
 
   Do not change this back to `1` for this tested configuration unless troubleshooting a different GPU.
 - Do not install standalone `libnvidia-egl-gbm1` if APT proposes removing the Ubuntu NVIDIA driver metapackage / `libnvidia-gl-*` packages.
-- `Super+V` toggles tiled/floating; when changing from tiled to floating, the window is resized to 70% x 72% of the monitor and centered so floating mode is visually obvious. Toggling back returns it to tiled layout control.
+- `Super+V` toggles tiled/floating. The intended enhancement is that a newly floating window becomes visibly smaller and centered. This area has required several iterations; if it fails again, manually run and inspect the exact simple `hyprctl` dispatcher sequence before making any further repo change. Do not stack more speculative geometry/fullscreen workarounds.
 - Brightness hotkeys remain under investigation on the tested MSI Stealth. `brightnessctl` works, and `evtest` shows `KEY_BRIGHTNESSDOWN/UP` from the ACPI `Video Bus`, but those events are not currently reaching Hyprland's bind path. Keep normal XF86 binds and the current fallback until a proper input-stack fix is confirmed; do not keep guessing new keycodes.
+- The top-right brightness corner is a Quickshell overlay backed by `brightnessctl`. Ubuntu brightness permissions are handled through `brightness-udev` / normal group permissions rather than setuid or passwordless sudo.
 
 ## Workspace tracker
 
@@ -170,7 +188,7 @@ Super+Q             Kitty
 Super+E             GNOME Files / Nautilus
 Super+B             default XDG browser
 Super+C             close focused window
-Super+V             tiled <-> floating; floating becomes smaller + centered
+Super+V             tiled <-> floating; intended floating state is smaller + centered
 Super+R             Persona launcher
 Super+M             leave Hyprland
 Super+Arrow         focus direction
@@ -197,15 +215,20 @@ Workspace switching, Wi-Fi controls, brightness, MPRIS, and the power menu do no
 - `pboi` must **not** be run with `sudo`.
 - Repo-managed user config belongs under `$HOME`; do not create those files as root.
 - Fresh install requires sudo only for system package/repository operations and `/usr/local` CAVA installation.
-- `setup/update-hook.sh` should only request sudo when a future migration genuinely requires a system-level package/file change.
+- `setup/update-hook.sh` should only request sudo when a specific release migration genuinely requires a system-level package/file/group change.
+- Release migration logic must check whether work is already complete before invoking privileged operations where practical.
 - Avoid broad root shells and avoid `sudo` around `git`, `rsync` to `$HOME`, Quickshell, or Hyprland config operations.
+- Do not solve desktop-runtime permission problems with setuid binaries or blanket passwordless sudo when a normal udev/group/polkit mechanism exists.
 
 ## User preferences for this project
 
 - Work step-by-step and avoid repeating already completed commands.
 - Keep instructions concise and practical.
 - Before changing the repo, inspect the latest version of the target file.
+- Check current official/versioned docs and search upstream/community solutions before inventing custom behavior.
+- Prefer simple, already-proven community patterns over elaborate bespoke logic.
 - When a local test is needed, give the exact command/file edit first; after confirmation, preserve it in the repo.
+- When repeated fixes fail, stop guessing and collect direct runtime output from the smallest reproducible command.
 - For shared changes, prefer updating GitHub and telling the user to run `pboi update` rather than asking both users to manually edit files.
 - Personal-only app tweaks (for example Spotify/Discord launch flags or one-off screen recording setup) should not be added to Personaboi unless explicitly requested.
 - Keep stacking changes into the current release version until the user explicitly asks for a version bump.
