@@ -23,12 +23,17 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - Mouse parallax now stores raw pointer offsets and applies them only on the shared ~60 Hz wallpaper tick, preventing the final parallax shader from being dirtied at pointer event rates above the wallpaper cadence.
 - The experimental 80% intermediate texture-size optimization was reverted after visible blur was observed. Both required `ShaderEffectSource` passes remain at native resolution for image sharpness.
 - Media capsule selection now ignores metadata-less idle browser MPRIS players. A real paused track, including paused Spotify playback, remains eligible so the capsule stays visible while paused.
+- Existing-install migrations are now explicitly cumulative: `pboi update` checks and installs runtime packages that older Personaboi installs may lack (`hyprland-qtutils`, `nautilus`, `brightness-udev`, `libnotify-bin`, and `jq`) before applying current config files.
+
+### Fixed
+- Fixed native notification toasts never becoming visible. Quickshell `ObjectModel` exposes its contents through `.values` and does not provide the `.count` property used by the first implementation; visibility now follows `trackedNotifications.values.length`, and the popup repeater uses a `ScriptModel` backed by the same reactive values list.
 
 ### Notes
 - Hyprland itself intentionally does not act as a full desktop notification daemon; Personaboi now provides that service natively through Quickshell instead of adding dunst/mako/swaync as another UI stack.
 - Only one service can own `org.freedesktop.Notifications` at a time. Do not autostart another notification daemon alongside Personaboi unless the native layer is disabled.
 - Normal notification body text is rendered as plain text; rich body markup and inline replies are intentionally not advertised yet.
 - Wallpaper optimization prioritizes power savings without sacrificing native image sharpness. The user can benchmark GPU wattage independently.
+- The cumulative update hook is intentionally idempotent, so an early pre-`pboi` install can bootstrap the current updater and jump directly to v1.6 instead of replaying every intermediate release.
 
 ## v1.5 — 2026-09-11
 
