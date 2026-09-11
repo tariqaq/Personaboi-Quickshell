@@ -7,6 +7,9 @@ import "../Data" as Dat
 Scope {
     id: root
 
+    // Native org.freedesktop.Notifications service. Hyprland intentionally
+    // leaves this job to a notification daemon; keeping it inside Quickshell
+    // lets Personaboi receive browser/app notifications without tiled clients.
     NotificationServer {
         id: server
         keepOnReload: false
@@ -58,7 +61,6 @@ Scope {
                         required property var modelData
                         width: toastStack.width
                         height: card.height
-                        property bool hovered: toastMouse.containsMouse
                         property bool entered: false
                         property int lifetimeMs: {
                             if (modelData.expireTimeout > 0)
@@ -70,11 +72,14 @@ Scope {
 
                         Component.onCompleted: entered = true
 
+                        HoverHandler {
+                            id: toastHover
+                        }
+
                         Timer {
-                            id: expireTimer
                             interval: toast.lifetimeMs
                             repeat: false
-                            running: !toast.hovered
+                            running: !toastHover.hovered
                             onTriggered: {
                                 if (toast.modelData)
                                     toast.modelData.expire()
@@ -132,7 +137,6 @@ Scope {
                                     color: "#33209FCD"
                                     border.width: 1
                                     border.color: "#555FCFDF"
-                                    anchors.top: parent.top
 
                                     Image {
                                         id: appIcon
@@ -217,10 +221,8 @@ Scope {
                                     }
 
                                     Row {
-                                        id: actionRow
                                         visible: toast.modelData.actions && toast.modelData.actions.length > 0
                                         spacing: 7
-                                        topPadding: 3
 
                                         Repeater {
                                             model: toast.modelData.actions ? Math.min(toast.modelData.actions.length, 2) : 0
@@ -280,27 +282,6 @@ Scope {
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: if (toast.modelData) toast.modelData.dismiss()
-                                }
-                            }
-
-                            MouseArea {
-                                id: toastMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                acceptedButtons: Qt.LeftButton
-                                propagateComposedEvents: true
-                                onClicked: mouse => {
-                                    var actions = toast.modelData.actions || []
-                                    var invoked = false
-                                    for (var i = 0; i < actions.length; ++i) {
-                                        if (actions[i].identifier === "default") {
-                                            actions[i].invoke()
-                                            invoked = true
-                                            break
-                                        }
-                                    }
-                                    if (!invoked)
-                                        mouse.accepted = false
                                 }
                             }
                         }
