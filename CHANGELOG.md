@@ -15,9 +15,13 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 ### Changed
 - Calendar view now shows 10 diagonal days instead of 7: three previous days, today, and six upcoming days.
 - Calendar entries now use consistent sizing: all ordinary days share the same date, weekday, and moon size, while today alone remains larger as the focal Persona highlight.
+- Shifted and tightened the 10-day diagonal leftward so the last date/moon stays fully inside the screen instead of clipping on the right.
 - Desktop clock moon and calendar moon icons now use the same shared phase calculation from `Data/Time.qml` instead of two separate approximations.
 - Moon calculations use a mean synodic month of 29.53059 days and a common reference new moon; future calendar entries therefore update their phase automatically from their date.
-- `Super+V` now captures the focused window address before toggling, waits for the floating transition to settle, then targets that exact client with `resizewindowpixel exact 70% 72%` before centering it. This avoids stale remembered floating geometry overriding the intended smaller size.
+- `Super+V` now explicitly sets the window floating/tiled state and derives an exact numeric floating size from the focused monitor's logical dimensions before centering it.
+
+### Fixed
+- Fixed `Super+V` cases where the window entered floating mode but retained an almost-fullscreen inherited geometry. The helper now reapplies the exact numeric size after the state transition instead of relying on the earlier percentage/address-targeted resize path.
 
 ### Notes
 - Moon phases are calculated locally; Personaboi does not call a weather or astronomy API for them. The display is an approximation based on the mean synodic cycle, not a high-precision astronomical ephemeris.
