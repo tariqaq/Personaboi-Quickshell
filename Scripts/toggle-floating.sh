@@ -13,12 +13,12 @@ fi
 
 case "$floating" in
     false|0)
-        # Clear any internal/client maximize/fullscreen state first. Some apps
-        # otherwise keep a maximized geometry even after becoming floating.
-        hyprctl dispatch fullscreenstate 0 0 >/dev/null 2>&1 || true
+        # Clear internal/client fullscreen or maximize state before changing
+        # geometry, then float the active window explicitly.
+        hyprctl dispatch fullscreenstate "0 0" >/dev/null 2>&1 || true
         hyprctl dispatch setfloating active >/dev/null 2>&1 || exit 1
-        sleep 0.18
-        hyprctl dispatch fullscreenstate 0 0 >/dev/null 2>&1 || true
+        sleep 0.20
+        hyprctl dispatch fullscreenstate "0 0" >/dev/null 2>&1 || true
 
         target_w=""
         target_h=""
@@ -31,18 +31,19 @@ case "$floating" in
         fi
 
         if [[ "$target_w" =~ ^[0-9]+$ && "$target_h" =~ ^[0-9]+$ ]]; then
-            # Use the documented resizeactive syntax directly with separate
-            # arguments, then repeat once in case the client restores geometry.
-            hyprctl dispatch resizeactive exact "$target_w" "$target_h" >/dev/null 2>&1 || true
-            sleep 0.14
-            hyprctl dispatch resizeactive exact "$target_w" "$target_h" >/dev/null 2>&1 || true
+            # hyprctl's dispatcher receives resizeparams as one argument string.
+            # Passing exact/W/H as separate argv entries can leave only the
+            # floating toggle effective while the resize itself is ignored.
+            hyprctl dispatch resizeactive "exact $target_w $target_h" >/dev/null 2>&1 || true
+            sleep 0.16
+            hyprctl dispatch resizeactive "exact $target_w $target_h" >/dev/null 2>&1 || true
         else
-            hyprctl dispatch resizeactive exact 68% 70% >/dev/null 2>&1 || true
-            sleep 0.14
-            hyprctl dispatch resizeactive exact 68% 70% >/dev/null 2>&1 || true
+            hyprctl dispatch resizeactive "exact 68% 70%" >/dev/null 2>&1 || true
+            sleep 0.16
+            hyprctl dispatch resizeactive "exact 68% 70%" >/dev/null 2>&1 || true
         fi
 
-        sleep 0.04
+        sleep 0.05
         hyprctl dispatch centerwindow 1 >/dev/null 2>&1 || true
         ;;
     true|1)
