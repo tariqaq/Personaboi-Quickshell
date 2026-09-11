@@ -16,8 +16,8 @@ Scope {
             required property var modelData
             screen: modelData
             anchors { top: true; right: true }
-            implicitWidth: corner.expanded ? 320 : (corner.hovered ? 110 : 82)
-            implicitHeight: corner.expanded ? 190 : (corner.hovered ? 105 : 7)
+            implicitWidth: corner.expanded ? 320 : (corner.shellVisible ? 110 : 82)
+            implicitHeight: corner.expanded ? 190 : (corner.shellVisible ? 105 : 7)
             color: "transparent"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
@@ -28,14 +28,30 @@ Scope {
                 anchors.fill: parent
                 property bool hovered: false
                 property bool expanded: false
+                // Keep the shell window large enough while the circle animates
+                // out. Collapsing the PanelWindow immediately clips the circle
+                // and makes it look like it vanished instead of sliding away.
+                property bool shellVisible: false
 
                 Timer {
                     id: autoHideTimer
                     interval: 900
                     repeat: false
                     onTriggered: {
-                        if (!corner.expanded)
+                        if (!corner.expanded) {
                             corner.hovered = false
+                            collapseTimer.restart()
+                        }
+                    }
+                }
+
+                Timer {
+                    id: collapseTimer
+                    interval: 520
+                    repeat: false
+                    onTriggered: {
+                        if (!corner.hovered && !corner.expanded)
+                            corner.shellVisible = false
                     }
                 }
 
@@ -55,12 +71,19 @@ Scope {
 
                 Timer {
                     id: setTimer
-                    interval: 45
+                    interval: 55
                     repeat: false
                     onTriggered: {
-                        setProc.command = ["brightnessctl", "set", root.brightness + "%"]
+                        setProc.command = ["brightnessctl", "-q", "set", root.brightness + "%"]
                         setProc.startDetached()
                     }
+                }
+
+                function showCorner() {
+                    corner.shellVisible = true
+                    corner.hovered = true
+                    collapseTimer.stop()
+                    autoHideTimer.stop()
                 }
 
                 function setBrightness(v) {
@@ -77,8 +100,7 @@ Scope {
                     HoverHandler {
                         onHoveredChanged: {
                             if (hovered) {
-                                corner.hovered = true
-                                autoHideTimer.stop()
+                                corner.showCorner()
                                 if (!readProc.running)
                                     readProc.running = true
                             } else if (!corner.expanded) {
@@ -96,7 +118,7 @@ Scope {
                     anchors.rightMargin: 10
                     width: 74
                     height: 74
-                    visible: y < 100
+                    visible: corner.shellVisible
                     y: corner.hovered || corner.expanded ? 0 : -110
 
                     Behavior on y {
@@ -126,8 +148,7 @@ Scope {
                         cursorShape: Qt.PointingHandCursor
                         onHoveredChanged: {
                             if (hovered) {
-                                corner.hovered = true
-                                autoHideTimer.stop()
+                                corner.showCorner()
                             } else if (!corner.expanded) {
                                 autoHideTimer.restart()
                             }
@@ -137,9 +158,8 @@ Scope {
                     TapHandler {
                         onTapped: {
                             corner.expanded = !corner.expanded
-                            corner.hovered = true
+                            corner.showCorner()
                             if (corner.expanded) {
-                                autoHideTimer.stop()
                                 if (!readProc.running)
                                     readProc.running = true
                             } else {
@@ -235,7 +255,7 @@ Scope {
                     acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                     onHoveredChanged: {
                         if (hovered) {
-                            autoHideTimer.stop()
+                            corner.showCorner()
                         } else if (!corner.expanded) {
                             autoHideTimer.restart()
                         }
