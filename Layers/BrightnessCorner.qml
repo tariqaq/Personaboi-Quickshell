@@ -16,8 +16,6 @@ Scope {
             required property var modelData
             screen: modelData
             anchors { top: true; right: true }
-            // Keep the surface a fixed size so the circle can animate all the
-            // way back out instead of being clipped by a shrinking window.
             implicitWidth: 320
             implicitHeight: 190
             color: "transparent"
@@ -25,8 +23,8 @@ Scope {
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
             focusable: false
 
-            // Only the tiny hotspot plus currently visible controls accept
-            // pointer input; the rest of this fixed shell surface is click-through.
+            // Keep the fixed shell surface click-through except where controls
+            // are actually present.
             mask: Region {
                 Region { item: hotspot }
                 Region { item: mainCircle }
@@ -38,32 +36,31 @@ Scope {
                 anchors.fill: parent
                 property bool revealed: false
                 property bool expanded: false
-                property bool interacting: false
+                property bool draggingSlider: false
+
+                function scheduleHide() {
+                    hideTimer.restart()
+                }
 
                 function reveal() {
                     revealed = true
-                    hideTimer.stop()
+                    scheduleHide()
                     if (!readProc.running)
                         readProc.running = true
                 }
 
-                function armHide() {
-                    hideTimer.restart()
-                }
-
                 function dismiss() {
+                    if (draggingSlider)
+                        return
                     expanded = false
                     revealed = false
                 }
 
                 Timer {
                     id: hideTimer
-                    interval: 1200
+                    interval: 1400
                     repeat: false
-                    onTriggered: {
-                        if (!corner.interacting)
-                            corner.dismiss()
-                    }
+                    onTriggered: corner.dismiss()
                 }
 
                 Process {
@@ -93,6 +90,7 @@ Scope {
                 function setBrightness(v) {
                     root.brightness = Math.max(1, Math.min(100, Math.round(v)))
                     setTimer.restart()
+                    scheduleHide()
                 }
 
                 Item {
@@ -104,13 +102,8 @@ Scope {
 
                     HoverHandler {
                         onHoveredChanged: {
-                            if (hovered) {
-                                corner.interacting = true
+                            if (hovered)
                                 corner.reveal()
-                            } else {
-                                corner.interacting = false
-                                corner.armHide()
-                            }
                         }
                     }
                 }
@@ -119,14 +112,12 @@ Scope {
                     id: mainCircle
                     anchors.top: parent.top
                     anchors.right: parent.right
-                    anchors.topMargin: 10
                     anchors.rightMargin: 10
+                    anchors.topMargin: corner.revealed ? 10 : -84
                     width: 74
                     height: 74
-                    y: corner.revealed ? 0 : -100
-                    opacity: y < -90 ? 0 : 1
 
-                    Behavior on y {
+                    Behavior on anchors.topMargin {
                         SpringAnimation {
                             spring: 2.5
                             damping: 0.22
@@ -134,7 +125,6 @@ Scope {
                             velocity: 1400
                         }
                     }
-                    Behavior on opacity { NumberAnimation { duration: 90 } }
 
                     Rectangle {
                         anchors.fill: parent
@@ -158,21 +148,18 @@ Scope {
                         id: circleHover
                         cursorShape: Qt.PointingHandCursor
                         onHoveredChanged: {
-                            if (hovered) {
-                                corner.interacting = true
-                                corner.reveal()
-                            } else {
-                                corner.interacting = false
-                                corner.armHide()
-                            }
+                            if (hovered)
+                                corner.scheduleHide()
                         }
                     }
 
                     TapHandler {
                         onTapped: {
-                            corner.reveal()
+                            corner.revealed = true
                             corner.expanded = !corner.expanded
-                            corner.armHide()
+                            corner.scheduleHide()
+                            if (!readProc.running)
+                                readProc.running = true
                         }
                     }
                 }
@@ -180,12 +167,11 @@ Scope {
                 Rectangle {
                     id: dropPanel
                     anchors.top: mainCircle.bottom
-                    anchors.topMargin: 8
                     anchors.right: parent.right
                     anchors.rightMargin: 10
+                    anchors.topMargin: corner.expanded ? 8 : -12
                     width: 300
                     height: 88
-                    y: corner.expanded ? 0 : -12
                     visible: opacity > 0.01
                     opacity: corner.expanded ? 1 : 0
                     radius: 12
@@ -194,17 +180,12 @@ Scope {
                     border.width: 2
 
                     Behavior on opacity { NumberAnimation { duration: 170 } }
-                    Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                    Behavior on anchors.topMargin { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
                     HoverHandler {
                         onHoveredChanged: {
-                            if (hovered) {
-                                corner.interacting = true
-                                corner.reveal()
-                            } else {
-                                corner.interacting = false
-                                corner.armHide()
-                            }
+                            if (hovered)
+                                corner.scheduleHide()
                         }
                     }
 
@@ -269,7 +250,7 @@ Scope {
                             }
 
                             onPressed: mouse => {
-                                corner.interacting = true
+                                corner.draggingSlider = true
                                 hideTimer.stop()
                                 apply(mouse.x)
                             }
@@ -278,12 +259,12 @@ Scope {
                                     apply(mouse.x)
                             }
                             onReleased: {
-                                corner.interacting = false
-                                corner.armHide()
+                                corner.draggingSlider = false
+                                corner.scheduleHide()
                             }
                             onCanceled: {
-                                corner.interacting = false
-                                corner.armHide()
+                                corner.draggingSlider = false
+                                corner.scheduleHide()
                             }
                         }
                     }
