@@ -109,8 +109,8 @@ Scope {
                 z: 2
 
                 // Ten-day diagonal: three days behind, today, and six ahead.
-                // All non-today entries intentionally use identical sizing so
-                // the diagonal reads consistently instead of growing/shrinking.
+                // All non-today entries intentionally use identical sizing.
+                // Keep the full run away from the right edge so day 10 never clips.
                 Repeater {
                     model: 10
                     delegate: CalendarEntry {
@@ -126,7 +126,7 @@ Scope {
                         readonly property bool isPast: offset < 0
                         readonly property real t: index / 9.0
 
-                        x: parent.width * 0.055 + t * (parent.width * 0.88)
+                        x: parent.width * 0.035 + t * (parent.width * 0.835)
                         y: parent.height * 0.76 - t * (parent.height * 0.61) - numSize * 0.5
 
                         dateObj: entryDate
@@ -163,8 +163,6 @@ Scope {
             return Math.round((dateObj - d) / 86400000);
         }
 
-        // Keep every ordinary day visually uniform. Today is the only larger
-        // entry because its concentric Persona highlight is the focal point.
         readonly property real numSize: todayFlag ? 86 : 54
         readonly property real dayLabelSize: todayFlag ? 17 : 12
         readonly property real alphaVal: todayFlag ? 1.0 : (pastFlag ? 0.68 : 0.78)
