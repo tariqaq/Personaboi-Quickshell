@@ -16,7 +16,7 @@ Scope {
             required property var modelData
             screen: modelData
             anchors { top: true; right: true }
-            implicitWidth: 320
+            implicitWidth: 360
             implicitHeight: 190
             color: "transparent"
             WlrLayershell.layer: WlrLayer.Overlay
@@ -97,6 +97,7 @@ Scope {
                     id: hotspot
                     anchors.top: parent.top
                     anchors.right: parent.right
+                    anchors.rightMargin: 48
                     width: 82
                     height: 8
 
@@ -112,7 +113,7 @@ Scope {
                     id: mainCircle
                     anchors.top: parent.top
                     anchors.right: parent.right
-                    anchors.rightMargin: 10
+                    anchors.rightMargin: 58
                     anchors.topMargin: corner.revealed ? 10 : -84
                     width: 74
                     height: 74
@@ -168,7 +169,7 @@ Scope {
                     id: dropPanel
                     anchors.top: mainCircle.bottom
                     anchors.right: parent.right
-                    anchors.rightMargin: 10
+                    anchors.rightMargin: 58
                     anchors.topMargin: corner.expanded ? 8 : -12
                     width: 300
                     height: 88
