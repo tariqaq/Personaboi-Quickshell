@@ -13,5 +13,22 @@ if [[ -r /etc/os-release ]]; then
     fi
 fi
 
-# v1.1 has no additional package migration.
+# v1.4: the corner brightness control must run brightnessctl as the logged-in
+# desktop user. Ubuntu ships the permission rules separately in brightness-udev.
+if command -v apt >/dev/null 2>&1 && command -v sudo >/dev/null 2>&1; then
+    if ! dpkg-query -W -f='${Status}' brightness-udev 2>/dev/null | grep -q 'ok installed'; then
+        echo "Installing brightness-udev for unprivileged backlight control..."
+        sudo apt install -y brightness-udev
+    fi
+
+    if ! id -nG "$USER" | tr ' ' '\n' | grep -qx video; then
+        echo "Adding $USER to the video group for brightness control..."
+        sudo usermod -aG video "$USER"
+        echo "Brightness permission note: log out and back in once after this update."
+    fi
+
+    sudo udevadm control --reload-rules >/dev/null 2>&1 || true
+    sudo udevadm trigger --subsystem-match=backlight >/dev/null 2>&1 || true
+fi
+
 exit 0
