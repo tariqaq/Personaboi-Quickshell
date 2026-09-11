@@ -8,18 +8,18 @@ A reproducible Ubuntu 26.04 + Hyprland setup based on **Yujon Pradhananga's Pers
 
 ## Current version
 
-**v1.4** — direct top-right brightness control and improved floating-window state handling.
+**v1.5** — consistent inactivity auto-dismiss behavior across Persona edge controls.
 
 See the full release history in **[`CHANGELOG.md`](CHANGELOG.md)**.
 
 For continuing this project in a fresh ChatGPT/agent conversation, start by reading **[`AGENTS.md`](AGENTS.md)**.
 
-### v1.4 focus
+### v1.5 focus
 
-- Push the pointer into the top-right top edge to reveal a Persona-styled brightness circle.
-- Click the circle to drop a compact brightness slider that controls `brightnessctl` directly.
-- The brightness control does not reserve desktop space and auto-hides like the left-side Persona drawer.
-- `Super+V` now clears maximize/fullscreen state before applying floating geometry so maximized client state cannot keep the new floating window nearly fullscreen.
+- Left-side Persona `:3` drawer now auto-dismisses after about 1.4 seconds of inactivity.
+- Hovering or dragging inside the drawer keeps it open while actively interacting.
+- Expanded blades collapse automatically when the pointer leaves and no further interaction occurs.
+- Successful blade drags still launch Calendar / Stats / Shaders / Power immediately and dismiss the drawer.
 
 ## What this fork adds
 
@@ -37,6 +37,7 @@ For continuing this project in a fresh ChatGPT/agent conversation, start by read
 - 10-day Persona calendar with locally calculated moon phases.
 - Expanded system telemetry panel.
 - Top-right Persona brightness control backed by `brightnessctl`.
+- Auto-dismissing left Persona drawer.
 - `pboi` updater for keeping multiple installs on the same repo version.
 
 ## Tested environment
