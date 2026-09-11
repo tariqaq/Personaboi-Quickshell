@@ -113,6 +113,8 @@ WlrLayershell {
         fragmentShader: Qt.resolvedUrl("../Assets/shaders/ripple/ripple.frag.qsb")
     }
 
+    // Ripple has to be materialized once because the Stars/Rain shader samples
+    // the result of another ShaderEffect. Keep this required pass.
     ShaderEffectSource {
         id: s0_clouds_out
         sourceItem: s0_bg_clouds
@@ -122,34 +124,29 @@ WlrLayershell {
         live: true
     }
 
-    // ── Stage 0b: Stars/Rain ──
-    ShaderEffect {
-        id: s0_bg_stars
-        anchors.fill: parent
-        visible: false
-
-        property var source: s0_clouds_out
-        property real time: 0
-        property real strength: 50
-        property real speed: 5.5
-        property real frequency: 10.0
-
-        vertexShader: Qt.resolvedUrl("../Assets/shaders/stars/stars.vert.qsb")
-        fragmentShader: Qt.resolvedUrl("../Assets/shaders/stars/stars.frag.qsb")
-    }
-
     // ── Stage 1: Composite ──
+    // The Stars/Rain ShaderEffect now lives directly inside the composite.
+    // Previously it was rendered into an extra full-screen ShaderEffectSource
+    // (s0_bg_out) only to be drawn immediately into this composite. Removing
+    // that redundant FBO keeps the same visual order while saving one live
+    // full-resolution offscreen pass and its backing texture.
     Item {
         id: s1_composite
         anchors.fill: parent
         visible: false
 
-        ShaderEffectSource {
-            id: s0_bg_out
-            sourceItem: s0_bg_stars
+        ShaderEffect {
+            id: s0_bg_stars
             anchors.fill: parent
-            hideSource: true
-            live: true
+
+            property var source: s0_clouds_out
+            property real time: 0
+            property real strength: 50
+            property real speed: 5.5
+            property real frequency: 10.0
+
+            vertexShader: Qt.resolvedUrl("../Assets/shaders/stars/stars.vert.qsb")
+            fragmentShader: Qt.resolvedUrl("../Assets/shaders/stars/stars.frag.qsb")
         }
 
         ShaderEffect {
@@ -185,7 +182,8 @@ WlrLayershell {
         }
     }
 
-    // ── Composite output ──
+    // Composite output is still required because the final Parallax shader
+    // samples the complete Stars/Bars/CAVA/foreground scene as one texture.
     ShaderEffectSource {
         id: s1_out
         sourceItem: s1_composite
