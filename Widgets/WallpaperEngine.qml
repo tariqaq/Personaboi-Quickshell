@@ -11,6 +11,8 @@ WlrLayershell {
     required property ShellScreen modelData
     property real mouseOffsetX: 0.0
     property real mouseOffsetY: 0.0
+    property real pendingMouseOffsetX: 0.0
+    property real pendingMouseOffsetY: 0.0
     property double wallpaperStartMs: Date.now()
     property bool wallpaperCovered: false
 
@@ -75,6 +77,10 @@ WlrLayershell {
             coverageProc.running = true
     }
 
+    // One 60 Hz cadence now owns both animated shader time and parallax state.
+    // Raw pointer motion only updates pending values; the expensive final
+    // parallax ShaderEffect is dirtied at most once per wallpaper tick instead
+    // of potentially at the monitor/pointer event rate.
     Timer {
         id: wallpaperTicker
         interval: 16
@@ -86,6 +92,11 @@ WlrLayershell {
             s0_bg_clouds.time = (elapsedSeconds * (10.0 / 800.0)) % 10.0
             s0_bg_stars.time = (elapsedSeconds * (1000.0 / 500.0)) % 1000.0
             s1_bars_motion.time = (elapsedSeconds * (10000.0 / 10000.0)) % 10000.0
+
+            if (root.mouseOffsetX !== root.pendingMouseOffsetX)
+                root.mouseOffsetX = root.pendingMouseOffsetX
+            if (root.mouseOffsetY !== root.pendingMouseOffsetY)
+                root.mouseOffsetY = root.pendingMouseOffsetY
         }
     }
 
@@ -156,6 +167,10 @@ WlrLayershell {
         fragmentShader: Qt.resolvedUrl("../Assets/shaders/ripple/ripple.frag.qsb")
     }
 
+    // Required intermediate texture, rendered at 80% linear resolution.
+    // The final wallpaper surface remains full-size; smooth sampling hides the
+    // small reduction well for this soft ripple/stars source while cutting the
+    // offscreen pixel count to about 64% of native.
     ShaderEffectSource {
         id: s0_clouds_out
         sourceItem: s0_bg_clouds
@@ -163,6 +178,8 @@ WlrLayershell {
         visible: false
         hideSource: true
         live: true
+        smooth: true
+        textureSize: Qt.size(Math.max(1, Math.round(width * 0.8)), Math.max(1, Math.round(height * 0.8)))
     }
 
     Item {
@@ -218,6 +235,9 @@ WlrLayershell {
         }
     }
 
+    // The final composite texture is also reduced modestly before the parallax
+    // pass. The visible parallax ShaderEffect itself still renders at full
+    // window size, so desktop/app refresh behavior is unchanged.
     ShaderEffectSource {
         id: s1_out
         sourceItem: s1_composite
@@ -225,6 +245,8 @@ WlrLayershell {
         visible: false
         hideSource: true
         live: true
+        smooth: true
+        textureSize: Qt.size(Math.max(1, Math.round(width * 0.8)), Math.max(1, Math.round(height * 0.8)))
     }
 
     ShaderEffect {
@@ -248,8 +270,8 @@ WlrLayershell {
         hoverEnabled: true
         acceptedButtons: Qt.NoButton
         onPositionChanged: mouse => {
-            root.mouseOffsetX = (mouse.x / width - 0.5) * 2.0
-            root.mouseOffsetY = (mouse.y / height - 0.5) * 2.0
+            root.pendingMouseOffsetX = (mouse.x / width - 0.5) * 2.0
+            root.pendingMouseOffsetY = (mouse.y / height - 0.5) * 2.0
         }
     }
 }
