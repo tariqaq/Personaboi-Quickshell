@@ -7,9 +7,6 @@ import "../Data" as Dat
 Scope {
     id: root
 
-    // Native org.freedesktop.Notifications service. Hyprland intentionally
-    // leaves this job to a notification daemon; keeping it inside Quickshell
-    // lets Personaboi receive browser/app notifications without tiled clients.
     NotificationServer {
         id: server
         keepOnReload: false
@@ -41,7 +38,7 @@ Scope {
             color: "transparent"
             implicitWidth: 390
             implicitHeight: Math.max(1, toastStack.implicitHeight)
-            visible: server.trackedNotifications.count > 0
+            visible: server.trackedNotifications.values.length > 0
             focusable: false
 
             WlrLayershell.layer: WlrLayer.Overlay
@@ -54,7 +51,9 @@ Scope {
                 spacing: 10
 
                 Repeater {
-                    model: server.trackedNotifications
+                    model: ScriptModel {
+                        values: server.trackedNotifications.values
+                    }
 
                     delegate: Item {
                         id: toast
@@ -65,9 +64,7 @@ Scope {
                         property int lifetimeMs: {
                             if (modelData.expireTimeout > 0)
                                 return Math.max(2500, Math.round(modelData.expireTimeout * 1000))
-                            if (modelData.urgency === NotificationUrgency.Critical)
-                                return 8000
-                            return 5000
+                            return modelData.urgency === NotificationUrgency.Critical ? 8000 : 5000
                         }
 
                         Component.onCompleted: entered = true
@@ -80,10 +77,7 @@ Scope {
                             interval: toast.lifetimeMs
                             repeat: false
                             running: !toastHover.hovered
-                            onTriggered: {
-                                if (toast.modelData)
-                                    toast.modelData.expire()
-                            }
+                            onTriggered: if (toast.modelData) toast.modelData.expire()
                         }
 
                         Rectangle {
@@ -97,12 +91,8 @@ Scope {
                             x: toast.entered ? 0 : 42
                             opacity: toast.entered ? 1.0 : 0.0
 
-                            Behavior on x {
-                                NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
-                            }
-                            Behavior on opacity {
-                                NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
-                            }
+                            Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
 
                             Rectangle {
                                 width: 4
@@ -111,9 +101,9 @@ Scope {
                                     left: parent.left
                                     top: parent.top
                                     bottom: parent.bottom
+                                    leftMargin: 7
                                     topMargin: 10
                                     bottomMargin: 10
-                                    leftMargin: 7
                                 }
                                 color: toast.modelData.urgency === NotificationUrgency.Critical ? Dat.Colors.color1 : Dat.Colors.color5
                             }
@@ -139,7 +129,6 @@ Scope {
                                     border.color: "#555FCFDF"
 
                                     Image {
-                                        id: appIcon
                                         anchors.centerIn: parent
                                         width: 30
                                         height: 30
@@ -153,15 +142,6 @@ Scope {
                                             return Quickshell.iconPath("dialog-information", true)
                                         }
                                     }
-
-                                    Text {
-                                        anchors.centerIn: parent
-                                        visible: appIcon.source.toString() === ""
-                                        text: "!"
-                                        color: Dat.Colors.color5
-                                        font.pixelSize: 20
-                                        font.bold: true
-                                    }
                                 }
 
                                 Column {
@@ -171,6 +151,7 @@ Scope {
                                     Row {
                                         width: parent.width
                                         spacing: 8
+
                                         Text {
                                             text: toast.modelData.appName || "Notification"
                                             color: Dat.Colors.color5
@@ -180,6 +161,7 @@ Scope {
                                             elide: Text.ElideRight
                                             width: Math.min(implicitWidth, parent.width * 0.42)
                                         }
+
                                         Rectangle {
                                             width: 4
                                             height: 4
@@ -187,6 +169,7 @@ Scope {
                                             color: Dat.Colors.color8
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
+
                                         Text {
                                             text: toast.modelData.urgency === NotificationUrgency.Critical ? "CRITICAL" : "NOW"
                                             color: toast.modelData.urgency === NotificationUrgency.Critical ? Dat.Colors.color1 : Dat.Colors.color8
@@ -226,6 +209,7 @@ Scope {
 
                                         Repeater {
                                             model: toast.modelData.actions ? Math.min(toast.modelData.actions.length, 2) : 0
+
                                             delegate: Rectangle {
                                                 required property int index
                                                 property var action: toast.modelData.actions[index]
@@ -245,6 +229,7 @@ Scope {
                                                     font.pixelSize: 10
                                                     elide: Text.ElideRight
                                                 }
+
                                                 MouseArea {
                                                     id: actionMouse
                                                     anchors.fill: parent
@@ -276,6 +261,7 @@ Scope {
                                     color: Dat.Colors.color15
                                     font.pixelSize: 18
                                 }
+
                                 MouseArea {
                                     id: closeMouse
                                     anchors.fill: parent
