@@ -9,6 +9,7 @@ WlrLayershell {
     required property ShellScreen modelData
     property real mouseOffsetX: 0.0
     property real mouseOffsetY: 0.0
+    property double wallpaperStartMs: Date.now()
     anchors.top: true
     anchors.left: true
     anchors.right: true
@@ -23,6 +24,25 @@ WlrLayershell {
     SystemClock {
         id: clock
         precision: SystemClock.Minutes
+    }
+
+    // Drive only the animated wallpaper uniforms at roughly 60 Hz instead of
+    // tying three perpetual NumberAnimations to the display refresh rate.
+    // Hyprland, applications, cursor motion, etc. remain free to present at the
+    // monitor's native refresh rate; this timer only changes wallpaper shader
+    // time properties. Date.now() keeps animation speed stable if a tick is late.
+    Timer {
+        id: wallpaperTicker
+        interval: 16
+        repeat: true
+        running: true
+        triggeredOnStart: true
+        onTriggered: {
+            var elapsedSeconds = (Date.now() - root.wallpaperStartMs) / 1000.0
+            s0_bg_clouds.time = (elapsedSeconds * (10.0 / 800.0)) % 10.0
+            s0_bg_stars.time = (elapsedSeconds * (1000.0 / 500.0)) % 1000.0
+            s1_bars_motion.time = (elapsedSeconds * (10000.0 / 10000.0)) % 10000.0
+        }
     }
 
     Image {
@@ -89,14 +109,6 @@ WlrLayershell {
         property real speed: 2.5
         property real frequency: 1.0
 
-        NumberAnimation on time {
-            from: 0
-            to: 10
-            duration: 800000
-            loops: Animation.Infinite
-            running: true
-        }
-
         vertexShader: Qt.resolvedUrl("../Assets/shaders/ripple/ripple.vert.qsb")
         fragmentShader: Qt.resolvedUrl("../Assets/shaders/ripple/ripple.frag.qsb")
     }
@@ -121,14 +133,6 @@ WlrLayershell {
         property real strength: 50
         property real speed: 5.5
         property real frequency: 10.0
-
-        NumberAnimation on time {
-            from: 0
-            to: 1000
-            duration: 500000
-            loops: Animation.Infinite
-            running: true
-        }
 
         vertexShader: Qt.resolvedUrl("../Assets/shaders/stars/stars.vert.qsb")
         fragmentShader: Qt.resolvedUrl("../Assets/shaders/stars/stars.frag.qsb")
@@ -155,14 +159,6 @@ WlrLayershell {
             property var source: barsRaw
             property real time: 0
             property real speed: 1
-
-            NumberAnimation on time {
-                from: 0
-                to: 10000
-                duration: 10000000
-                loops: Animation.Infinite
-                running: true
-            }
 
             vertexShader: Qt.resolvedUrl("../Assets/shaders/motion/motion.vert.qsb")
             fragmentShader: Qt.resolvedUrl("../Assets/shaders/motion/motion.frag.qsb")
