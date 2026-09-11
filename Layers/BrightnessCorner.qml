@@ -16,42 +16,53 @@ Scope {
             required property var modelData
             screen: modelData
             anchors { top: true; right: true }
-            implicitWidth: corner.expanded ? 320 : (corner.shellVisible ? 110 : 82)
-            implicitHeight: corner.expanded ? 190 : (corner.shellVisible ? 105 : 7)
+            // Keep the surface a fixed size so the circle can animate all the
+            // way back out instead of being clipped by a shrinking window.
+            implicitWidth: 320
+            implicitHeight: 190
             color: "transparent"
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
             focusable: false
 
+            // Only the tiny hotspot plus currently visible controls accept
+            // pointer input; the rest of this fixed shell surface is click-through.
+            mask: Region {
+                Region { item: hotspot }
+                Region { item: mainCircle }
+                Region { item: dropPanel }
+            }
+
             Item {
                 id: corner
                 anchors.fill: parent
-                property bool hovered: false
+                property bool revealed: false
                 property bool expanded: false
-                // Keep the shell window large enough while the circle animates
-                // out. Collapsing the PanelWindow immediately clips the circle
-                // and makes it look like it vanished instead of sliding away.
-                property bool shellVisible: false
+                property bool interacting: false
 
-                Timer {
-                    id: autoHideTimer
-                    interval: 900
-                    repeat: false
-                    onTriggered: {
-                        if (!corner.expanded) {
-                            corner.hovered = false
-                            collapseTimer.restart()
-                        }
-                    }
+                function reveal() {
+                    revealed = true
+                    hideTimer.stop()
+                    if (!readProc.running)
+                        readProc.running = true
+                }
+
+                function armHide() {
+                    hideTimer.restart()
+                }
+
+                function dismiss() {
+                    expanded = false
+                    revealed = false
                 }
 
                 Timer {
-                    id: collapseTimer
-                    interval: 520
+                    id: hideTimer
+                    interval: 1200
                     repeat: false
                     onTriggered: {
-                        if (!corner.hovered && !corner.expanded)
-                            corner.shellVisible = false
+                        if (!corner.interacting)
+                            corner.dismiss()
                     }
                 }
 
@@ -79,13 +90,6 @@ Scope {
                     }
                 }
 
-                function showCorner() {
-                    corner.shellVisible = true
-                    corner.hovered = true
-                    collapseTimer.stop()
-                    autoHideTimer.stop()
-                }
-
                 function setBrightness(v) {
                     root.brightness = Math.max(1, Math.min(100, Math.round(v)))
                     setTimer.restart()
@@ -96,15 +100,16 @@ Scope {
                     anchors.top: parent.top
                     anchors.right: parent.right
                     width: 82
-                    height: 7
+                    height: 8
+
                     HoverHandler {
                         onHoveredChanged: {
                             if (hovered) {
-                                corner.showCorner()
-                                if (!readProc.running)
-                                    readProc.running = true
-                            } else if (!corner.expanded) {
-                                autoHideTimer.restart()
+                                corner.interacting = true
+                                corner.reveal()
+                            } else {
+                                corner.interacting = false
+                                corner.armHide()
                             }
                         }
                     }
@@ -118,12 +123,18 @@ Scope {
                     anchors.rightMargin: 10
                     width: 74
                     height: 74
-                    visible: corner.shellVisible
-                    y: corner.hovered || corner.expanded ? 0 : -110
+                    y: corner.revealed ? 0 : -100
+                    opacity: y < -90 ? 0 : 1
 
                     Behavior on y {
-                        SpringAnimation { spring: 2.5; damping: 0.22; epsilon: 0.01; velocity: 1400 }
+                        SpringAnimation {
+                            spring: 2.5
+                            damping: 0.22
+                            epsilon: 0.01
+                            velocity: 1400
+                        }
                     }
+                    Behavior on opacity { NumberAnimation { duration: 90 } }
 
                     Rectangle {
                         anchors.fill: parent
@@ -148,23 +159,20 @@ Scope {
                         cursorShape: Qt.PointingHandCursor
                         onHoveredChanged: {
                             if (hovered) {
-                                corner.showCorner()
-                            } else if (!corner.expanded) {
-                                autoHideTimer.restart()
+                                corner.interacting = true
+                                corner.reveal()
+                            } else {
+                                corner.interacting = false
+                                corner.armHide()
                             }
                         }
                     }
 
                     TapHandler {
                         onTapped: {
+                            corner.reveal()
                             corner.expanded = !corner.expanded
-                            corner.showCorner()
-                            if (corner.expanded) {
-                                if (!readProc.running)
-                                    readProc.running = true
-                            } else {
-                                autoHideTimer.restart()
-                            }
+                            corner.armHide()
                         }
                     }
                 }
@@ -177,17 +185,30 @@ Scope {
                     anchors.rightMargin: 10
                     width: 300
                     height: 88
-                    visible: corner.expanded
+                    y: corner.expanded ? 0 : -12
+                    visible: opacity > 0.01
                     opacity: corner.expanded ? 1 : 0
                     radius: 12
                     color: "#e80c0f1d"
                     border.color: Dat.Colors.color5
                     border.width: 2
 
-                    Behavior on opacity { NumberAnimation { duration: 160 } }
+                    Behavior on opacity { NumberAnimation { duration: 170 } }
+                    Behavior on y { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+
+                    HoverHandler {
+                        onHoveredChanged: {
+                            if (hovered) {
+                                corner.interacting = true
+                                corner.reveal()
+                            } else {
+                                corner.interacting = false
+                                corner.armHide()
+                            }
+                        }
+                    }
 
                     Text {
-                        id: titleText
                         anchors.left: parent.left
                         anchors.leftMargin: 16
                         anchors.top: parent.top
@@ -242,22 +263,28 @@ Scope {
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
+
                             function apply(mouseX) {
                                 corner.setBrightness((mouseX / width) * 100)
                             }
-                            onPressed: mouse => apply(mouse.x)
-                            onPositionChanged: mouse => { if (pressed) apply(mouse.x) }
-                        }
-                    }
-                }
 
-                HoverHandler {
-                    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-                    onHoveredChanged: {
-                        if (hovered) {
-                            corner.showCorner()
-                        } else if (!corner.expanded) {
-                            autoHideTimer.restart()
+                            onPressed: mouse => {
+                                corner.interacting = true
+                                hideTimer.stop()
+                                apply(mouse.x)
+                            }
+                            onPositionChanged: mouse => {
+                                if (pressed)
+                                    apply(mouse.x)
+                            }
+                            onReleased: {
+                                corner.interacting = false
+                                corner.armHide()
+                            }
+                            onCanceled: {
+                                corner.interacting = false
+                                corner.armHide()
+                            }
                         }
                     }
                 }
