@@ -31,6 +31,7 @@ fi
 [[ -f "$HOME/.config/quickshell/persona/Layers/Calendar.qml" ]] && pass '10-day calendar layer installed' || fail 'Calendar.qml missing'
 [[ -f "$HOME/.config/quickshell/persona/Layers/Resume.qml" ]] && pass 'Expanded stats layer installed' || fail 'Resume.qml missing'
 [[ -f "$HOME/.config/quickshell/persona/Layers/BrightnessCorner.qml" ]] && pass 'Top-right brightness control installed' || fail 'BrightnessCorner.qml missing'
+[[ -f "$HOME/.config/quickshell/persona/Layers/Notifications.qml" ]] && pass 'Native notification daemon installed' || fail 'Notifications.qml missing'
 [[ -f "$HOME/.config/quickshell/persona/Scripts/apply-shader.sh" ]] && pass 'Shader intensity helper installed' || fail 'apply-shader.sh missing'
 [[ -f "$HOME/.config/quickshell/persona/Scripts/toggle-floating.sh" ]] && pass 'Floating toggle helper installed' || fail 'toggle-floating.sh missing'
 [[ -f "$HOME/.config/quickshell/persona/VERSION" ]] && pass "Personaboi v$(tr -d '[:space:]' < "$HOME/.config/quickshell/persona/VERSION") installed" || warn 'VERSION marker missing'
