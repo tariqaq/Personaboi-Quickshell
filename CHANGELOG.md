@@ -2,6 +2,19 @@
 
 All notable Personaboi changes are tracked here. Versions describe this Ubuntu 26.04 fork, not upstream Persona-Quickshell releases.
 
+## v1.5 — 2026-09-11
+
+**Focus:** consistent auto-dismiss behavior across Persona edge controls.
+
+### Changed
+- The left-side Persona `:3` drawer now follows the same inactivity behavior as the top-right brightness control.
+- Revealing the drawer, opening its blades, or hovering/dragging a blade keeps it alive while actively interacting.
+- After leaving the drawer inactive for about 1.4 seconds, it collapses the blades and slides the main circle back off-screen automatically.
+- Dragging a Calendar / Stats / Shaders / Power blade still activates the selected ticket immediately and dismisses the drawer afterward.
+
+### Notes
+- This change intentionally reuses the proven Timer + hover/interacting pattern already working in `BrightnessCorner.qml` rather than adding a new animation/state system.
+
 ## v1.4 — 2026-09-11
 
 **Focus:** direct brightness control and tougher window-state handling.
