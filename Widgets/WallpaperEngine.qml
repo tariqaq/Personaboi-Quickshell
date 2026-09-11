@@ -25,12 +25,6 @@ WlrLayershell {
     namespace: "wallpaper.engine"
     screen: modelData
 
-    // Quickshell 0.3.1 provides updatesEnabled specifically for static/hidden
-    // shell surfaces such as wallpapers. When the current desktop is completely
-    // occupied by tiled/fullscreen windows, freeze this wallpaper surface so
-    // CAVA/shader changes cannot force redraws underneath windows that hide it.
-    // Any floating window keeps the wallpaper live because the desktop remains
-    // visibly exposed around that window.
     updatesEnabled: !root.wallpaperCovered
 
     SystemClock {
@@ -38,9 +32,6 @@ WlrLayershell {
         precision: SystemClock.Minutes
     }
 
-    // Check coverage when Hyprland reports a window/workspace state change.
-    // A small debounce avoids spawning repeated hyprctl queries during bursts
-    // such as opening, closing, moving, or toggling a window.
     Connections {
         target: Hyprland
         function onRawEvent(event) {
@@ -55,8 +46,6 @@ WlrLayershell {
         onTriggered: root.refreshCoverage()
     }
 
-    // Rare fallback in case a compositor state transition does not emit the
-    // event we expect. The normal path above is event-driven, not constant polling.
     Timer {
         interval: 5000
         repeat: true
@@ -86,11 +75,6 @@ WlrLayershell {
             coverageProc.running = true
     }
 
-    // Drive only the animated wallpaper uniforms at roughly 60 Hz instead of
-    // tying three perpetual NumberAnimations to the display refresh rate.
-    // Hyprland, applications, cursor motion, etc. remain free to present at the
-    // monitor's native refresh rate. Date.now() keeps animation speed stable if
-    // a tick is late or the wallpaper was temporarily paused while covered.
     Timer {
         id: wallpaperTicker
         interval: 16
@@ -155,7 +139,6 @@ WlrLayershell {
         visible: false
     }
 
-    // ── Stage 0a: Ripple ──
     ShaderEffect {
         id: s0_bg_clouds
         anchors.fill: parent
@@ -173,8 +156,6 @@ WlrLayershell {
         fragmentShader: Qt.resolvedUrl("../Assets/shaders/ripple/ripple.frag.qsb")
     }
 
-    // Ripple has to be materialized once because the Stars/Rain shader samples
-    // the result of another ShaderEffect. Keep this required pass.
     ShaderEffectSource {
         id: s0_clouds_out
         sourceItem: s0_bg_clouds
@@ -184,12 +165,6 @@ WlrLayershell {
         live: true
     }
 
-    // ── Stage 1: Composite ──
-    // The Stars/Rain ShaderEffect now lives directly inside the composite.
-    // Previously it was rendered into an extra full-screen ShaderEffectSource
-    // (s0_bg_out) only to be drawn immediately into this composite. Removing
-    // that redundant FBO keeps the same visual order while saving one live
-    // full-resolution offscreen pass and its backing texture.
     Item {
         id: s1_composite
         anchors.fill: parent
@@ -230,6 +205,7 @@ WlrLayershell {
                 topMargin: 0
             }
             height: 555
+            active: !root.wallpaperCovered
         }
 
         Image {
@@ -242,8 +218,6 @@ WlrLayershell {
         }
     }
 
-    // Composite output is still required because the final Parallax shader
-    // samples the complete Stars/Bars/CAVA/foreground scene as one texture.
     ShaderEffectSource {
         id: s1_out
         sourceItem: s1_composite
@@ -253,7 +227,6 @@ WlrLayershell {
         live: true
     }
 
-    // ── Stage 2: Parallax ──
     ShaderEffect {
         id: s2_parallax
         anchors.fill: parent
@@ -270,14 +243,13 @@ WlrLayershell {
         fragmentShader: Qt.resolvedUrl("../Assets/shaders/parallax/parallax.frag.qsb")
     }
 
-    // ── Mouse tracking ──
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.NoButton
         onPositionChanged: mouse => {
-            root.mouseOffsetX = (mouse.x / width - 0.5) * 2.0;
-            root.mouseOffsetY = (mouse.y / height - 0.5) * 2.0;
+            root.mouseOffsetX = (mouse.x / width - 0.5) * 2.0
+            root.mouseOffsetY = (mouse.y / height - 0.5) * 2.0
         }
     }
 }
