@@ -25,6 +25,7 @@ ShellRoot {
     Lay.AppDrawer {}
     Lay.VolumeOsd {}
     Lay.BrightnessOsd {}
+    Lay.BrightnessCorner {}
     Lay.Searchapp {}
     Lay.Tray {}
 }
