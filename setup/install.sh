@@ -7,6 +7,14 @@ if [[ "$EUID" -eq 0 ]]; then
   exit 1
 fi
 
+LOG_DIR="$HOME/.local/state/personaboi/logs"
+mkdir -p "$LOG_DIR"
+INSTALL_LOG_FILE="$LOG_DIR/install-$(date '+%Y%m%d-%H%M%S').log"
+exec > >(tee -a "$INSTALL_LOG_FILE") 2>&1
+printf '[%s] install start: user=%s\n' "$(date '+%F %T %z')" "$USER"
+trap 'rc=$?; printf "[%s] ERROR rc=%s line=%s command=%q\n" "$(date "+%F %T %z")" "$rc" "$LINENO" "$BASH_COMMAND" >&2' ERR
+trap 'printf "[%s] install finished. Log: %s\n" "$(date "+%F %T %z")" "$INSTALL_LOG_FILE"' EXIT
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET_QS="$HOME/.config/quickshell/persona"
 TARGET_HYPR="$HOME/.config/hypr"
@@ -18,7 +26,6 @@ if [[ ! -r /etc/os-release ]]; then
   echo "Cannot identify the operating system." >&2
   exit 1
 fi
-# shellcheck disable=SC1091
 source /etc/os-release
 if [[ "${ID:-}" != "ubuntu" || "${VERSION_ID:-}" != "26.04" ]]; then
   echo "This installer is tested for Ubuntu 26.04 only." >&2
@@ -50,9 +57,6 @@ sudo apt install -y \
   qt6-base-dev qt6-declarative-dev libpipewire-0.3-dev libfftw3-dev \
   fonts-noto fonts-noto-color-emoji
 
-# brightnessctl's udev rules grant backlight access to the video group.
-# Add the desktop user once; the new supplementary group becomes active after
-# logout/login, which avoids unsafe setuid or blanket passwordless sudo hacks.
 if ! id -nG "$USER" | tr ' ' '\n' | grep -qx video; then
   sudo usermod -aG video "$USER"
   BRIGHTNESS_RELOGIN=1
@@ -122,9 +126,11 @@ printf 'Installed Quickshell: '; qs --version || true
 printf 'Installed Hyprland: '; Hyprland --version | head -n 1 || true
 printf 'Nerd Font match: '; fc-match 'JetBrainsMono Nerd Font' | head -n 1 || true
 
-cat <<'EOF2'
+cat <<EOF2
 
 Installation files are in place.
+Logs are stored under:
+  $LOG_DIR
 
 Before first Hyprland login:
   1. If you use NVIDIA, make sure your normal Ubuntu NVIDIA driver is installed.
