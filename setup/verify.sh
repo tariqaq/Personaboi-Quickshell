@@ -9,7 +9,7 @@ check_cmd() {
   if command -v "$1" >/dev/null 2>&1; then pass "$1 -> $(command -v "$1")"; else fail "$1 not found"; fi
 }
 
-for cmd in Hyprland start-hyprland hyprctl qs wpctl brightnessctl playerctl wl-copy grim slurp kitty nautilus nm-applet blueman-applet awk; do
+for cmd in Hyprland start-hyprland hyprctl qs wpctl brightnessctl playerctl wl-copy grim slurp kitty nautilus nm-applet blueman-applet notify-send busctl awk; do
   check_cmd "$cmd"
 done
 
@@ -37,6 +37,19 @@ fi
 [[ -f "$HOME/.config/quickshell/persona/VERSION" ]] && pass "Personaboi v$(tr -d '[:space:]' < "$HOME/.config/quickshell/persona/VERSION") installed" || warn 'VERSION marker missing'
 [[ -f "$HOME/.local/lib/qt6/qml/CavaMonitor/libcavamonitorplugin.so" ]] && pass 'CavaMonitor plugin installed' || fail 'CavaMonitor plugin missing'
 [[ -f /usr/local/lib/libcava.so ]] && pass 'libcava.so installed' || fail 'libcava.so missing'
+
+if command -v busctl >/dev/null 2>&1 && pgrep -x qs >/dev/null 2>&1; then
+  if busctl --user status org.freedesktop.Notifications >/dev/null 2>&1; then
+    owner_pid="$(busctl --user status org.freedesktop.Notifications 2>/dev/null | awk '/^PID:/ {print $2; exit}')"
+    if [[ -n "$owner_pid" ]] && ps -p "$owner_pid" -o comm= 2>/dev/null | grep -qx qs; then
+      pass 'org.freedesktop.Notifications is owned by Quickshell'
+    else
+      warn 'org.freedesktop.Notifications is owned by another process; Personaboi notifications may not receive events'
+    fi
+  else
+    warn 'org.freedesktop.Notifications currently has no owner'
+  fi
+fi
 
 printf '\nVersions:\n'
 Hyprland --version 2>/dev/null | head -n 1 || true
