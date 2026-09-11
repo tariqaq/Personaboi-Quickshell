@@ -10,6 +10,8 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - Native Quickshell notification daemon using `NotificationServer`, so browser/app notifications arrive through the standard `org.freedesktop.Notifications` D-Bus interface instead of appearing as tiled utility windows.
 - Persona-themed notification toasts in the top-right corner using the existing dark navy/cyan palette, app/image icons, summary/body text, urgency accents, dismiss controls, and up to two advertised notification actions.
 - Notification toasts auto-expire using the sender timeout when provided, otherwise about 5 seconds for normal notifications and 8 seconds for critical notifications. Hovering pauses expiry.
+- Compact Persona notification-history button aligned to the right side of the 24 px workspace strip. It opens a scrollable top-right history panel containing up to the latest 50 notifications for the current Quickshell session, with timestamps, app/image icons, summary/body text, urgency styling, and a Clear control.
+- Persistent diagnostic logs for `setup/install.sh`, `setup/update-hook.sh`, `setup/verify.sh`, and `pboi`. Logs are stored under `~/.local/state/personaboi/logs/`; failures record the failing line/command where practical without enabling noisy global shell tracing.
 
 ### Changed
 - Wallpaper shader time updates are driven by one shared ~60 Hz timer instead of perpetual animations following the high-refresh display. Hyprland, applications, cursor motion, and the rest of the desktop remain free to render at the monitor's native refresh rate.
@@ -24,6 +26,8 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - The experimental 80% intermediate texture-size optimization was reverted after visible blur was observed. Both required `ShaderEffectSource` passes remain at native resolution for image sharpness.
 - Media capsule selection now ignores metadata-less idle browser MPRIS players. A real paused track, including paused Spotify playback, remains eligible so the capsule stays visible while paused.
 - Existing-install migrations are now explicitly cumulative: `pboi update` checks and installs runtime packages that older Personaboi installs may lack (`hyprland-qtutils`, `nautilus`, `brightness-udev`, `libnotify-bin`, and `jq`) before applying current config files.
+- The brightness corner is shifted slightly left so its reveal hotspot/circle no longer competes with the new notification-history button at the far top-right.
+- `pboi` now logs target/installed version and commit information and writes Hyprland verification output plus the latest Quickshell restart output into the persistent log directory.
 
 ### Fixed
 - Fixed native notification toasts never becoming visible. Quickshell `ObjectModel` exposes its contents through `.values` and does not provide the `.count` property used by the first implementation; visibility now follows `trackedNotifications.values.length`, and the popup repeater uses a `ScriptModel` backed by the same reactive values list.
@@ -32,6 +36,7 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - Hyprland itself intentionally does not act as a full desktop notification daemon; Personaboi now provides that service natively through Quickshell instead of adding dunst/mako/swaync as another UI stack.
 - Only one service can own `org.freedesktop.Notifications` at a time. Do not autostart another notification daemon alongside Personaboi unless the native layer is disabled.
 - Normal notification body text is rendered as plain text; rich body markup and inline replies are intentionally not advertised yet.
+- Notification history is intentionally session-local for now; it survives toast expiry/dismissal but resets when Quickshell itself restarts.
 - Wallpaper optimization prioritizes power savings without sacrificing native image sharpness. The user can benchmark GPU wattage independently.
 - The cumulative update hook is intentionally idempotent, so an early pre-`pboi` install can bootstrap the current updater and jump directly to v1.6 instead of replaying every intermediate release.
 
