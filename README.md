@@ -8,18 +8,23 @@ A reproducible Ubuntu 26.04 + Hyprland setup based on **Yujon Pradhananga's Pers
 
 ## Current version
 
-**v1.5** — consistent inactivity auto-dismiss behavior across Persona edge controls.
+**v1.6** — native Persona notifications plus the completed wallpaper performance/power optimization pass.
 
 See the full release history in **[`CHANGELOG.md`](CHANGELOG.md)**.
 
 For continuing this project in a fresh ChatGPT/agent conversation, start by reading **[`AGENTS.md`](AGENTS.md)**.
 
-### v1.5 focus
+### v1.6 focus
 
-- Left-side Persona `:3` drawer now auto-dismisses after about 1.4 seconds of inactivity.
-- Hovering or dragging inside the drawer keeps it open while actively interacting.
-- Expanded blades collapse automatically when the pointer leaves and no further interaction occurs.
-- Successful blade drags still launch Calendar / Stats / Shaders / Power immediately and dismiss the drawer.
+- Native Quickshell notification daemon using the standard desktop D-Bus notification interface.
+- Persona-themed top-right notification toasts with icons/images, urgency styling, actions, hover-paused timeout, and dismiss controls.
+- Browser/app notifications are handled by the shell instead of appearing as tiled helper windows.
+- Wallpaper animation work is capped near 60 Hz while Hyprland/apps remain at native refresh.
+- Wallpaper rendering and CAVA pause while tiled/fullscreen windows cover the desktop; floating windows keep it live.
+- CAVA keeps all 50 bars, paints at about 30 Hz, sleeps on silence, and pauses capture while covered.
+- Mouse parallax is applied on the wallpaper cadence rather than every raw pointer event.
+- Required wallpaper intermediate textures remain native-resolution after the 80% experiment was reverted for visible blur.
+- Media capsule ignores metadata-less idle browser MPRIS players but stays visible for real paused tracks.
 
 ## What this fork adds
 
@@ -29,7 +34,8 @@ For continuing this project in a fresh ChatGPT/agent conversation, start by read
 - NVIDIA settings used on the tested RTX 4060 laptop.
 - Quickshell system tray with native right-click menus.
 - Persona workspace tracker and click-to-switch workspaces.
-- Media capsule that hides when no MPRIS player exists.
+- Media capsule that hides when no meaningful MPRIS media exists, while preserving paused tracks.
+- Native Persona notification daemon and top-right notification toasts.
 - Clock sizing and Linux font substitutions for 1920x1200 @ 1.25.
 - JetBrainsMono Nerd Font installation for icon/battery glyphs.
 - Standard `hyprland.conf` shader switching via `hyprctl keyword` instead of upstream Lua-only runtime commands.
@@ -38,6 +44,7 @@ For continuing this project in a fresh ChatGPT/agent conversation, start by read
 - Expanded system telemetry panel.
 - Top-right Persona brightness control backed by `brightnessctl`.
 - Auto-dismissing left Persona drawer.
+- Optimized live wallpaper/CAVA pipeline for lower idle GPU power without reducing native image sharpness.
 - `pboi` updater for keeping multiple installs on the same repo version.
 
 ## Tested environment
@@ -100,6 +107,20 @@ export PATH="$HOME/.local/bin:$PATH"
 pboi update
 ```
 
+## Native notifications
+
+`Layers/Notifications.qml` registers Quickshell as the desktop notification server using `org.freedesktop.Notifications`. Applications such as browsers and messaging clients can therefore send normal desktop notifications directly to Personaboi.
+
+Notifications appear as Persona-styled top-right layer-shell toasts rather than normal Hyprland client windows, so they do not enter the tiling layout. Toasts use the existing navy/cyan palette, show an app/image icon where available, support advertised actions, pause timeout while hovered, and can be dismissed manually.
+
+Only one notification daemon should own the desktop notification D-Bus service. Do not autostart dunst, mako, swaync, or another notification daemon alongside the native Personaboi notification layer unless the Personaboi layer is disabled.
+
+## Wallpaper optimization
+
+The live wallpaper keeps Hyprland and applications at the display's native refresh rate while its own animated shader state is updated near 60 Hz. When the active workspace contains only tiled/fullscreen windows, Quickshell wallpaper updates and CAVA capture pause; if any floating window is present, the wallpaper stays live.
+
+CAVA retains all 50 bars but paints its Canvas at about 30 Hz, sleeps after near-silence, and resumes automatically when meaningful audio returns. Mouse parallax input is collected immediately but applied only on the wallpaper cadence. The two required shader intermediate textures remain native-resolution because the tested 80% scale produced visible blur.
+
 ## Workspace tracker
 
 On workspaces 1–5:
@@ -159,7 +180,7 @@ CHANGELOG.md               Version history
 AGENTS.md                  ChatGPT/agent project handoff context
 Assets/                    Original Persona assets + screen shaders
 Data/                      Persona data/services including shared time/moon model
-Layers/                    Persona UI layers, including BrightnessCorner.qml
+Layers/                    Persona UI layers, including Notifications.qml
 Scripts/                   Runtime helpers such as floating/shader controls
 Widgets/                   Persona widgets and system-info providers
 shell.qml                  Quickshell root
