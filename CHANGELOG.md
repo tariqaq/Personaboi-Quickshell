@@ -2,6 +2,23 @@
 
 All notable Personaboi changes are tracked here. Versions describe this Ubuntu 26.04 fork, not upstream Persona-Quickshell releases.
 
+## v1.4 — 2026-09-11
+
+**Focus:** direct brightness control and tougher window-state handling.
+
+### Added
+- Persona-styled top-right brightness hotspot. Pushing the pointer into the top-right top edge reveals a small brightness circle; clicking it drops a compact slider panel.
+- Brightness slider writes directly through `brightnessctl set N%`, with a short throttle while dragging. The existing Brightness OSD continues to reflect the changed backlight value.
+- The brightness hotspot follows the same basic reveal/auto-hide behavior as the left-side Persona drawer, but without the ticket blades.
+
+### Changed
+- `Super+V` now clears internal and client fullscreen/maximize state with `fullscreenstate 0 0` before and after switching to floating mode, then applies an exact logical-pixel size and centers the window.
+- Floating resize calls now use the documented dispatcher argument form directly rather than packaging all resize parameters into one quoted string.
+
+### Notes
+- The brightness control only occupies a tiny top-right hotspot while hidden, expands only while hovered/open, and does not reserve desktop space.
+- This release keeps the existing unresolved MSI brightness-key issue separate; the new brightness slider works through `brightnessctl` regardless of whether those hardware hotkeys reach Hyprland.
+
 ## v1.3 — 2026-09-11
 
 **Focus:** richer Persona utilities and more informative system views.
