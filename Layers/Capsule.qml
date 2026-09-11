@@ -10,7 +10,34 @@ import QtQuick.Effects
 
 Scope {
     id: capsuleScope
-    property var mpris: Mpris.players.values[0] || null
+
+    function pickMprisPlayer() {
+        var players = Mpris.players.values
+        var fallback = null
+
+        for (var i = 0; i < players.length; i++) {
+            var player = players[i]
+            var title = (player.trackTitle || "").trim()
+            var artist = (player.trackArtist || "").trim()
+
+            // Browsers can expose an idle MPRIS service with only an app icon
+            // and no actual media metadata. Do not show the capsule for that.
+            // A paused real track still has title/artist metadata, so it stays.
+            if (title === "" && artist === "")
+                continue
+
+            if (player.playbackState === MprisPlaybackState.Playing)
+                return player
+
+            if (fallback === null)
+                fallback = player
+        }
+
+        return fallback
+    }
+
+    property var mpris: capsuleScope.pickMprisPlayer()
+
     Variants {
         model: Quickshell.screens
         PanelWindow {
@@ -55,7 +82,6 @@ Scope {
                 Row {
                     anchors.centerIn: parent
                     spacing: -10
-                    // Track info
                     Column {
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 0
@@ -96,7 +122,6 @@ Scope {
                         }
                     }
 
-                    // Disk + prev/next
                     Column {
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 1
@@ -118,9 +143,7 @@ Scope {
                                     font.pixelSize: 30
                                     color: prevMouse.containsMouse ? Dat.Colors.color3 : Dat.Colors.color15
                                     Behavior on color {
-                                        ColorAnimation {
-                                            duration: 150
-                                        }
+                                        ColorAnimation { duration: 150 }
                                     }
                                 }
                                 MouseArea {
@@ -208,9 +231,7 @@ Scope {
                                     font.pixelSize: 30
                                     color: nextMouse.containsMouse ? Dat.Colors.color3 : Dat.Colors.color15
                                     Behavior on color {
-                                        ColorAnimation {
-                                            duration: 150
-                                        }
+                                        ColorAnimation { duration: 150 }
                                     }
                                 }
                                 MouseArea {
