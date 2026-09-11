@@ -16,12 +16,20 @@ STATE_DIR="$HOME/.local/share/personaboi"
 STATE_COMMIT="$STATE_DIR/commit"
 STATE_VERSION="$STATE_DIR/version"
 CLI_TARGET="$HOME/.local/bin/pboi"
+LOG_DIR="$HOME/.local/state/personaboi/logs"
 PBOI_TMPDIR=""
+
+mkdir -p "$LOG_DIR"
+PBOI_LOG_FILE="$LOG_DIR/pboi-$(date '+%Y%m%d-%H%M%S').log"
+exec > >(tee -a "$PBOI_LOG_FILE") 2>&1
+printf '[%s] pboi start: user=%s command=%q\n' "$(date '+%F %T %z')" "$USER" "${*:-help}"
+trap 'rc=$?; printf "[%s] ERROR rc=%s line=%s command=%q\n" "$(date "+%F %T %z")" "$rc" "$LINENO" "$BASH_COMMAND" >&2' ERR
 
 cleanup() {
     if [[ -n "${PBOI_TMPDIR:-}" && -d "$PBOI_TMPDIR" ]]; then
         rm -rf -- "$PBOI_TMPDIR"
     fi
+    printf '[%s] pboi finished. Log: %s\n' "$(date '+%F %T %z')" "$PBOI_LOG_FILE"
 }
 trap cleanup EXIT
 
@@ -79,6 +87,9 @@ update_personaboi() {
         old_version="$(tr -d '[:space:]' < "$TARGET_QS/VERSION")"
     fi
 
+    printf '[diag] installed_version=%s installed_commit=%s target_version=%s target_commit=%s\n' \
+        "${old_version:-unknown}" "${old_commit:-unknown}" "$new_version" "$new_commit"
+
     if [[ -n "$old_commit" && "$old_commit" == "$new_commit" ]]; then
         printf 'Already up to date: Personaboi v%s (%s)\n' "$new_version" "${new_commit:0:7}"
         return 0
@@ -86,7 +97,7 @@ update_personaboi() {
 
     if [[ -f "$tmpdir/repo/setup/update-hook.sh" ]]; then
         echo "Running v$new_version update preparation..."
-        bash "$tmpdir/repo/setup/update-hook.sh"
+        PBOI_PARENT_LOG="$PBOI_LOG_FILE" bash "$tmpdir/repo/setup/update-hook.sh"
     fi
 
     mkdir -p "$STATE_DIR/backups" "$TARGET_HYPR" "$TARGET_ENV" "$HOME/.local/bin"
@@ -125,8 +136,9 @@ update_personaboi() {
     cp "$tmpdir/repo/setup/qt.conf" "$TARGET_ENV/qt.conf"
     install -Dm755 "$tmpdir/repo/setup/pboi" "$CLI_TARGET"
 
+    local hypr_verify_log="$LOG_DIR/hyprland-verify-latest.log"
     if command -v Hyprland >/dev/null 2>&1; then
-        if ! Hyprland --verify-config >/tmp/pboi-hyprland-verify.log 2>&1; then
+        if ! Hyprland --verify-config >"$hypr_verify_log" 2>&1; then
             echo "Hyprland config verification failed. Restoring previous configuration..." >&2
             if [[ -d "$backup/persona" ]]; then
                 rm -rf "$TARGET_QS"
@@ -139,7 +151,7 @@ update_personaboi() {
             if [[ -f "$backup/environment.d/qt.conf" ]]; then
                 cp "$backup/environment.d/qt.conf" "$TARGET_ENV/qt.conf"
             fi
-            cat /tmp/pboi-hyprland-verify.log >&2 || true
+            cat "$hypr_verify_log" >&2 || true
             exit 1
         fi
     fi
@@ -153,7 +165,7 @@ update_personaboi() {
 
     if [[ "$qs_was_running" -eq 1 ]]; then
         pkill -x qs >/dev/null 2>&1 || true
-        nohup qs -c "$TARGET_QS" >/tmp/personaboi-quickshell.log 2>&1 &
+        nohup qs -c "$TARGET_QS" >"$LOG_DIR/quickshell-latest.log" 2>&1 &
     fi
 
     printf '\nUpdated: %s -> v%s\n' "${old_version:-unknown}" "$new_version"
@@ -173,6 +185,7 @@ update_personaboi() {
     printf '\nPersonaboi v%s is now active.\n' "$new_version"
     if [[ "$qs_was_running" -eq 1 ]]; then
         echo "Quickshell was restarted automatically."
+        echo "Quickshell log: $LOG_DIR/quickshell-latest.log"
     fi
 }
 
