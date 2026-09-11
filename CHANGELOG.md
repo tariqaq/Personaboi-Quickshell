@@ -12,10 +12,12 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - After leaving the drawer inactive for about 1.4 seconds, it collapses the blades and slides the main circle back off-screen automatically.
 - Dragging a Calendar / Stats / Shaders / Power blade still activates the selected ticket immediately and dismisses the drawer afterward.
 - Wallpaper shader time updates are now driven by one shared ~60 Hz timer instead of three perpetual `NumberAnimation`s that can advance with a high-refresh display. The original ripple, stars/rain, and bars-motion animation speeds are preserved using elapsed wall-clock time; Hyprland and normal application rendering remain untouched at the monitor's native refresh rate.
+- Wallpaper render pipeline step 2 removes the redundant full-screen `s0_bg_out` `ShaderEffectSource`. The Stars/Rain shader now renders directly inside the Stage 1 composite, while the two offscreen passes that are still structurally required remain: Ripple -> texture for Stars/Rain, and complete composite -> texture for final Parallax.
 
 ### Notes
 - This change intentionally reuses the proven Timer + hover/interacting pattern already working in `BrightnessCorner.qml` rather than adding a new animation/state system.
 - Wallpaper 60 Hz throttling is the first performance-optimization step and should be measured on the target machine before applying the later render-pipeline/CAVA optimizations.
+- Qt warns that `ShaderEffectSource` adds an offscreen FBO render and extra video-memory usage, so step 2 removes only the clearly redundant intermediate pass without reducing texture resolution or changing shader quality.
 
 ## v1.4 — 2026-09-11
 
