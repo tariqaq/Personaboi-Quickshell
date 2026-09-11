@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Runs from `pboi update` before shared files are applied.
-# Keep release-specific dependency migrations here so existing pboi clients
-# can prepare for a newer repo version during the same update.
+# Keep migrations cumulative and idempotent so very old installs can jump
+# straight to the current release without replaying every historical version.
 
 if [[ -r /etc/os-release ]]; then
     # shellcheck disable=SC1091
@@ -13,14 +13,22 @@ if [[ -r /etc/os-release ]]; then
     fi
 fi
 
-# v1.4: the corner brightness control must run brightnessctl as the logged-in
-# desktop user. Ubuntu ships the permission rules separately in brightness-udev.
 if command -v apt >/dev/null 2>&1 && command -v sudo >/dev/null 2>&1; then
-    if ! dpkg-query -W -f='${Status}' brightness-udev 2>/dev/null | grep -q 'ok installed'; then
-        echo "Installing brightness-udev for unprivileged backlight control..."
-        sudo apt install -y brightness-udev
+    missing=()
+
+    for pkg in hyprland-qtutils nautilus brightness-udev libnotify-bin jq; do
+        if ! dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q 'ok installed'; then
+            missing+=("$pkg")
+        fi
+    done
+
+    if (( ${#missing[@]} > 0 )); then
+        echo "Installing Personaboi runtime packages missing from this older install: ${missing[*]}"
+        sudo apt install -y "${missing[@]}"
     fi
 
+    # v1.4+: brightness control runs as the desktop user. Ubuntu's udev rules
+    # grant access through the video group instead of setuid/passwordless sudo.
     if ! id -nG "$USER" | tr ' ' '\n' | grep -qx video; then
         echo "Adding $USER to the video group for brightness control..."
         sudo usermod -aG video "$USER"
