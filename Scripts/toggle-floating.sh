@@ -5,40 +5,49 @@ if ! command -v hyprctl >/dev/null 2>&1; then
     exit 1
 fi
 
-# Capture the focused window before changing state so we can target the same
-# client even if focus/order changes while Hyprland animates the transition.
 window_json="$(hyprctl activewindow -j 2>/dev/null || true)"
-address=""
 floating=""
 if command -v jq >/dev/null 2>&1 && [[ -n "$window_json" ]]; then
-    address="$(printf '%s' "$window_json" | jq -r '.address // empty' 2>/dev/null || true)"
     floating="$(printf '%s' "$window_json" | jq -r '.floating // empty' 2>/dev/null || true)"
 fi
 
 case "$floating" in
     false|0)
-        hyprctl dispatch togglefloating >/dev/null 2>&1 || exit 1
-        # The old floating geometry may be remembered by Hyprland/app state.
-        # Wait for float state to settle, then explicitly overwrite geometry.
-        sleep 0.16
+        # Set floating explicitly, then overwrite the inherited tiled geometry
+        # with numeric logical-pixel dimensions derived from the focused monitor.
+        hyprctl dispatch setfloating active >/dev/null 2>&1 || exit 1
+        sleep 0.12
 
-        if [[ -n "$address" ]]; then
-            # resizewindowpixel targets the exact window and accepts screen
-            # percentages in the classic dispatcher syntax used by 0.53.x.
-            hyprctl dispatch resizewindowpixel "exact 70% 72%,address:$address" >/dev/null 2>&1 || true
-            sleep 0.03
-        else
-            hyprctl dispatch resizeactive "exact 70% 72%" >/dev/null 2>&1 || true
+        target_w=""
+        target_h=""
+        if command -v jq >/dev/null 2>&1; then
+            monitor_json="$(hyprctl monitors -j 2>/dev/null || true)"
+            if [[ -n "$monitor_json" ]]; then
+                target_w="$(printf '%s' "$monitor_json" | jq -r '[.[] | select(.focused == true)][0] | if . then ((.width / .scale) * 0.68 | floor) else empty end' 2>/dev/null || true)"
+                target_h="$(printf '%s' "$monitor_json" | jq -r '[.[] | select(.focused == true)][0] | if . then ((.height / .scale) * 0.70 | floor) else empty end' 2>/dev/null || true)"
+            fi
         fi
 
-        # Center only after the explicit resize has landed.
+        if [[ "$target_w" =~ ^[0-9]+$ && "$target_h" =~ ^[0-9]+$ ]]; then
+            hyprctl dispatch resizeactive "exact $target_w $target_h" >/dev/null 2>&1 || true
+            # Some clients restore their previous floating size one frame later.
+            sleep 0.10
+            hyprctl dispatch resizeactive "exact $target_w $target_h" >/dev/null 2>&1 || true
+        else
+            # Generic fallback when monitor JSON is unavailable.
+            hyprctl dispatch resizeactive "exact 68% 70%" >/dev/null 2>&1 || true
+            sleep 0.10
+            hyprctl dispatch resizeactive "exact 68% 70%" >/dev/null 2>&1 || true
+        fi
+
+        sleep 0.03
         hyprctl dispatch centerwindow 1 >/dev/null 2>&1 || true
         ;;
     true|1)
-        hyprctl dispatch togglefloating >/dev/null 2>&1 || exit 1
+        hyprctl dispatch settiled active >/dev/null 2>&1 || exit 1
         ;;
     *)
-        # Preserve native toggle behavior if JSON output changes unexpectedly.
+        # Preserve native behavior if JSON state detection ever changes.
         hyprctl dispatch togglefloating >/dev/null 2>&1 || exit 1
         ;;
 esac
