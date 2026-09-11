@@ -2,6 +2,34 @@
 
 All notable Personaboi changes are tracked here. Versions describe this Ubuntu 26.04 fork, not upstream Persona-Quickshell releases.
 
+## v1.6 — 2026-09-11
+
+**Focus:** native desktop notifications plus the completed wallpaper power/performance optimization pass.
+
+### Added
+- Native Quickshell notification daemon using `NotificationServer`, so browser/app notifications arrive through the standard `org.freedesktop.Notifications` D-Bus interface instead of appearing as tiled utility windows.
+- Persona-themed notification toasts in the top-right corner using the existing dark navy/cyan palette, app/image icons, summary/body text, urgency accents, dismiss controls, and up to two advertised notification actions.
+- Notification toasts auto-expire using the sender timeout when provided, otherwise about 5 seconds for normal notifications and 8 seconds for critical notifications. Hovering pauses expiry.
+
+### Changed
+- Wallpaper shader time updates are driven by one shared ~60 Hz timer instead of perpetual animations following the high-refresh display. Hyprland, applications, cursor motion, and the rest of the desktop remain free to render at the monitor's native refresh rate.
+- Removed the redundant full-screen `s0_bg_out` `ShaderEffectSource`; Stars/Rain now renders directly inside the Stage 1 composite while the two structurally required offscreen passes remain.
+- Wallpaper rendering pauses when the active workspace is occupied only by tiled/fullscreen windows. Any floating window keeps the wallpaper live because desktop area is expected to remain visible.
+- Coverage checks are event-driven from Hyprland IPC with a short debounce and a slow fallback refresh. Covered wallpaper surfaces use Quickshell `updatesEnabled: false` and stop the shared animation ticker.
+- CAVA remains at all 50 bars but Canvas painting is capped to about 30 Hz instead of repainting on every raw audio update.
+- CAVA performs one final clear on near-silence and then stops requesting Canvas repaints until meaningful audio returns.
+- CAVA capture itself is disabled while the wallpaper is covered and resumes when the desktop becomes visible again.
+- CAVA Canvas uses the threaded render strategy where supported, and the old always-updating debug text readout was removed.
+- Mouse parallax now stores raw pointer offsets and applies them only on the shared ~60 Hz wallpaper tick, preventing the final parallax shader from being dirtied at pointer event rates above the wallpaper cadence.
+- The experimental 80% intermediate texture-size optimization was reverted after visible blur was observed. Both required `ShaderEffectSource` passes remain at native resolution for image sharpness.
+- Media capsule selection now ignores metadata-less idle browser MPRIS players. A real paused track, including paused Spotify playback, remains eligible so the capsule stays visible while paused.
+
+### Notes
+- Hyprland itself intentionally does not act as a full desktop notification daemon; Personaboi now provides that service natively through Quickshell instead of adding dunst/mako/swaync as another UI stack.
+- Only one service can own `org.freedesktop.Notifications` at a time. Do not autostart another notification daemon alongside Personaboi unless the native layer is disabled.
+- Normal notification body text is rendered as plain text; rich body markup and inline replies are intentionally not advertised yet.
+- Wallpaper optimization prioritizes power savings without sacrificing native image sharpness. The user can benchmark GPU wattage independently.
+
 ## v1.5 — 2026-09-11
 
 **Focus:** consistent auto-dismiss behavior across Persona edge controls.
@@ -11,26 +39,9 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - Revealing the drawer, opening its blades, or hovering/dragging a blade keeps it alive while actively interacting.
 - After leaving the drawer inactive for about 1.4 seconds, it collapses the blades and slides the main circle back off-screen automatically.
 - Dragging a Calendar / Stats / Shaders / Power blade still activates the selected ticket immediately and dismisses the drawer afterward.
-- Wallpaper shader time updates are now driven by one shared ~60 Hz timer instead of three perpetual `NumberAnimation`s that can advance with a high-refresh display. The original ripple, stars/rain, and bars-motion animation speeds are preserved using elapsed wall-clock time; Hyprland and normal application rendering remain untouched at the monitor's native refresh rate.
-- Wallpaper render pipeline step 2 removes the redundant full-screen `s0_bg_out` `ShaderEffectSource`. The Stars/Rain shader now renders directly inside the Stage 1 composite, while the two offscreen passes that are still structurally required remain: Ripple -> texture for Stars/Rain, and complete composite -> texture for final Parallax.
-- Wallpaper optimization step 3 now pauses the wallpaper surface whenever the active workspace on that monitor is covered only by tiled/fullscreen windows. If any floating window is present, the wallpaper remains live because some desktop area is expected to stay visible.
-- Coverage checks are event-driven from Hyprland IPC with a small debounce, plus a slow 5-second fallback check. When covered, both the wallpaper 60 Hz ticker and the Quickshell window's render updates are paused; the surface redraws immediately when it becomes visible again.
-- Wallpaper optimization step 4 keeps all 50 CAVA bars but decouples Canvas painting from raw audio-value callbacks. CAVA now paints at most about 30 Hz (`33 ms`) while audio is active instead of repainting on every value update.
-- CAVA now detects near-silence from the incoming bar values. It performs one final clear when audio activity drops to zero, then stops requesting Canvas repaints until meaningful audio returns.
-- When step 3 marks the wallpaper covered, CAVA capture itself is disabled in addition to the wallpaper render surface/ticker being paused. It resumes automatically when the wallpaper becomes visible again.
-- The CAVA Canvas now uses Qt's threaded render strategy so Canvas painting work can be performed away from the main UI thread where supported.
-- Removed the old always-updating CAVA debug text readout from the wallpaper visualizer.
-- Wallpaper optimization step 5 now throttles mouse-parallax state application to the same ~60 Hz wallpaper cadence. Raw pointer motion only updates pending coordinates, preventing the final parallax shader from being dirtied at pointer/display event rates above the wallpaper cap.
-- The two still-required `ShaderEffectSource` textures now render at 80% linear resolution with smooth sampling. The visible wallpaper surface remains full-size, while each offscreen texture processes about 64% of the native pixel count.
 
 ### Notes
 - This change intentionally reuses the proven Timer + hover/interacting pattern already working in `BrightnessCorner.qml` rather than adding a new animation/state system.
-- Wallpaper 60 Hz throttling is the first performance-optimization step and should be measured on the target machine before applying the later render-pipeline/CAVA optimizations.
-- Qt warns that `ShaderEffectSource` adds an offscreen FBO render and extra video-memory usage, so step 2 removes only the clearly redundant intermediate pass without reducing texture resolution or changing shader quality.
-- Step 3 uses Quickshell 0.3.1 `updatesEnabled` on the wallpaper window. This is specifically intended for static/hidden shell surfaces and prevents visual updates from forcing redraws while the wallpaper is covered.
-- A single tiled window, multiple tiled windows, or a fullscreen/maximized tiled window pauses wallpaper rendering. A normal floating window keeps wallpaper rendering enabled.
-- Step 4 deliberately leaves CAVA at 50 bars. Only repaint cadence, silence handling, covered-wallpaper activity, and Canvas execution strategy were changed.
-- Step 5 deliberately limits resolution reduction to offscreen intermediate textures. The final output, Hyprland compositor, applications, and cursor remain at native display resolution/refresh.
 
 ## v1.4 — 2026-09-11
 
