@@ -1,5 +1,7 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
+import Quickshell.Io
 import Quickshell.Wayland
 import qs.Data as Dat
 
@@ -10,6 +12,8 @@ WlrLayershell {
     property real mouseOffsetX: 0.0
     property real mouseOffsetY: 0.0
     property double wallpaperStartMs: Date.now()
+    property bool wallpaperCovered: false
+
     anchors.top: true
     anchors.left: true
     anchors.right: true
@@ -21,21 +25,77 @@ WlrLayershell {
     namespace: "wallpaper.engine"
     screen: modelData
 
+    // Quickshell 0.3.1 provides updatesEnabled specifically for static/hidden
+    // shell surfaces such as wallpapers. When the current desktop is completely
+    // occupied by tiled/fullscreen windows, freeze this wallpaper surface so
+    // CAVA/shader changes cannot force redraws underneath windows that hide it.
+    // Any floating window keeps the wallpaper live because the desktop remains
+    // visibly exposed around that window.
+    updatesEnabled: !root.wallpaperCovered
+
     SystemClock {
         id: clock
         precision: SystemClock.Minutes
     }
 
+    // Check coverage when Hyprland reports a window/workspace state change.
+    // A small debounce avoids spawning repeated hyprctl queries during bursts
+    // such as opening, closing, moving, or toggling a window.
+    Connections {
+        target: Hyprland
+        function onRawEvent(event) {
+            coverageDebounce.restart()
+        }
+    }
+
+    Timer {
+        id: coverageDebounce
+        interval: 120
+        repeat: false
+        onTriggered: root.refreshCoverage()
+    }
+
+    // Rare fallback in case a compositor state transition does not emit the
+    // event we expect. The normal path above is event-driven, not constant polling.
+    Timer {
+        interval: 5000
+        repeat: true
+        running: true
+        triggeredOnStart: true
+        onTriggered: root.refreshCoverage()
+    }
+
+    Process {
+        id: coverageProc
+        command: [
+            "sh", "-c",
+            "mon=\"$1\"; mjson=\"$(hyprctl monitors -j 2>/dev/null)\" || { echo 0; exit; }; ws=\"$(printf '%s' \"$mjson\" | jq -r --arg mon \"$mon\" '.[] | select(.name == $mon) | .activeWorkspace.id' | head -n1)\"; sws=\"$(printf '%s' \"$mjson\" | jq -r --arg mon \"$mon\" '.[] | select(.name == $mon) | (.specialWorkspace.id // 0)' | head -n1)\"; [ -n \"$ws\" ] && [ \"$ws\" != null ] || { echo 0; exit; }; [ -n \"$sws\" ] && [ \"$sws\" != null ] || sws=0; hyprctl clients -j 2>/dev/null | jq -r --argjson ws \"$ws\" --argjson sws \"$sws\" '[.[] | select(.workspace.id == $ws or ($sws != 0 and .workspace.id == $sws))] as $c | if ($c | length) == 0 then 0 elif (($c | map(select(.floating == true)) | length) > 0) then 0 else 1 end'",
+            "personaboi-coverage", root.modelData.name
+        ]
+        stdout: SplitParser {
+            onRead: data => {
+                var value = data.trim()
+                if (value === "0" || value === "1")
+                    root.wallpaperCovered = value === "1"
+            }
+        }
+    }
+
+    function refreshCoverage() {
+        if (!coverageProc.running)
+            coverageProc.running = true
+    }
+
     // Drive only the animated wallpaper uniforms at roughly 60 Hz instead of
     // tying three perpetual NumberAnimations to the display refresh rate.
     // Hyprland, applications, cursor motion, etc. remain free to present at the
-    // monitor's native refresh rate; this timer only changes wallpaper shader
-    // time properties. Date.now() keeps animation speed stable if a tick is late.
+    // monitor's native refresh rate. Date.now() keeps animation speed stable if
+    // a tick is late or the wallpaper was temporarily paused while covered.
     Timer {
         id: wallpaperTicker
         interval: 16
         repeat: true
-        running: true
+        running: !root.wallpaperCovered
         triggeredOnStart: true
         onTriggered: {
             var elapsedSeconds = (Date.now() - root.wallpaperStartMs) / 1000.0
