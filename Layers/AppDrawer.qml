@@ -46,17 +46,30 @@ Scope {
                 anchors.fill: parent
                 property bool isHovered: false
                 property bool isExpanded: false
+                property bool interacting: false
+
+                function reveal() {
+                    isHovered = true;
+                    autoHideTimer.stop();
+                }
+
+                function armHide() {
+                    autoHideTimer.restart();
+                }
+
+                function dismiss() {
+                    isExpanded = false;
+                    isHovered = false;
+                }
 
                 Timer {
                     id: autoHideTimer
-                    interval: 1000
+                    interval: 1400
                     running: false
                     repeat: false
                     onTriggered: {
-                        if (!toolskiRoot.isExpanded) {
-                            toolskiRoot.isHovered = false;
-                            toolskiRoot.isExpanded = false;
-                        }
+                        if (!toolskiRoot.interacting)
+                            toolskiRoot.dismiss();
                     }
                 }
 
@@ -67,13 +80,11 @@ Scope {
                     height: 100
                     HoverHandler {
                         onHoveredChanged: {
-                            if (hovered) {
-                                toolskiRoot.isHovered = true;
-                                autoHideTimer.stop();
-                            } else {
-                                if (!toolskiRoot.isExpanded)
-                                    autoHideTimer.restart();
-                            }
+                            toolskiRoot.interacting = hovered;
+                            if (hovered)
+                                toolskiRoot.reveal();
+                            else
+                                toolskiRoot.armHide();
                         }
                     }
                 }
@@ -171,23 +182,19 @@ Scope {
                         id: mainCircleHover
                         cursorShape: Qt.PointingHandCursor
                         onHoveredChanged: {
-                            if (hovered) {
-                                toolskiRoot.isHovered = true;
-                                autoHideTimer.stop();
-                            } else {
-                                if (!toolskiRoot.isExpanded)
-                                    autoHideTimer.restart();
-                            }
+                            toolskiRoot.interacting = hovered;
+                            if (hovered)
+                                toolskiRoot.reveal();
+                            else
+                                toolskiRoot.armHide();
                         }
                     }
 
                     TapHandler {
                         onTapped: {
                             toolskiRoot.isExpanded = !toolskiRoot.isExpanded;
-                            if (toolskiRoot.isExpanded)
-                                autoHideTimer.stop();
-                            else
-                                autoHideTimer.restart();
+                            toolskiRoot.reveal();
+                            toolskiRoot.armHide();
                         }
                     }
                 }
@@ -308,8 +315,12 @@ Scope {
                                 id: bladeHoverHandler
                                 cursorShape: Qt.PointingHandCursor
                                 onHoveredChanged: {
-                                    if (hovered)
-                                        autoHideTimer.stop();
+                                    toolskiRoot.interacting = hovered;
+                                    if (hovered) {
+                                        toolskiRoot.reveal();
+                                    } else {
+                                        toolskiRoot.armHide();
+                                    }
                                 }
                             }
                             MouseArea {
@@ -319,6 +330,8 @@ Scope {
                                 property real startX: 0
                                 property real dragStartX: 0
                                 onPressed: mouse => {
+                                    toolskiRoot.interacting = true;
+                                    autoHideTimer.stop();
                                     startX = blade.x;
                                     dragStartX = mouse.x;
                                 }
@@ -331,12 +344,18 @@ Scope {
                                 }
                                 onReleased: mouse => {
                                     var delta = mouse.x - dragStartX;
+                                    toolskiRoot.interacting = false;
                                     if (delta > 50) {
                                         modelData.action();
-                                        toolskiRoot.isExpanded = false;
-                                        toolskiRoot.isHovered = false;
+                                        toolskiRoot.dismiss();
+                                    } else {
+                                        toolskiRoot.armHide();
                                     }
                                     blade.x = Qt.binding(() => startX);
+                                }
+                                onCanceled: {
+                                    toolskiRoot.interacting = false;
+                                    toolskiRoot.armHide();
                                 }
                             }
                             Behavior on x {
@@ -353,8 +372,7 @@ Scope {
                     enabled: toolskiRoot.isExpanded
                     z: -1
                     onClicked: {
-                        toolskiRoot.isExpanded = false;
-                        autoHideTimer.restart();
+                        toolskiRoot.dismiss();
                     }
                 }
             }
