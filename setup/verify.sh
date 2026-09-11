@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -u
 
+LOG_DIR="$HOME/.local/state/personaboi/logs"
+mkdir -p "$LOG_DIR"
+VERIFY_LOG_FILE="$LOG_DIR/verify-$(date '+%Y%m%d-%H%M%S').log"
+exec > >(tee -a "$VERIFY_LOG_FILE") 2>&1
+printf '[%s] verify start: user=%s\n' "$(date '+%F %T %z')" "$USER"
+trap 'printf "[%s] verify finished. Log: %s\n" "$(date "+%F %T %z")" "$VERIFY_LOG_FILE"' EXIT
+
 pass() { printf '[ OK ] %s\n' "$1"; }
 warn() { printf '[WARN] %s\n' "$1"; }
 fail() { printf '[FAIL] %s\n' "$1"; }
@@ -31,7 +38,7 @@ fi
 [[ -f "$HOME/.config/quickshell/persona/Layers/Calendar.qml" ]] && pass '10-day calendar layer installed' || fail 'Calendar.qml missing'
 [[ -f "$HOME/.config/quickshell/persona/Layers/Resume.qml" ]] && pass 'Expanded stats layer installed' || fail 'Resume.qml missing'
 [[ -f "$HOME/.config/quickshell/persona/Layers/BrightnessCorner.qml" ]] && pass 'Top-right brightness control installed' || fail 'BrightnessCorner.qml missing'
-[[ -f "$HOME/.config/quickshell/persona/Layers/Notifications.qml" ]] && pass 'Native notification daemon installed' || fail 'Notifications.qml missing'
+[[ -f "$HOME/.config/quickshell/persona/Layers/Notifications.qml" ]] && pass 'Native notification daemon/history installed' || fail 'Notifications.qml missing'
 [[ -f "$HOME/.config/quickshell/persona/Scripts/apply-shader.sh" ]] && pass 'Shader intensity helper installed' || fail 'apply-shader.sh missing'
 [[ -f "$HOME/.config/quickshell/persona/Scripts/toggle-floating.sh" ]] && pass 'Floating toggle helper installed' || fail 'toggle-floating.sh missing'
 [[ -f "$HOME/.config/quickshell/persona/VERSION" ]] && pass "Personaboi v$(tr -d '[:space:]' < "$HOME/.config/quickshell/persona/VERSION") installed" || warn 'VERSION marker missing'
@@ -64,3 +71,7 @@ elif [[ -e /sys/module/nvidia_drm/parameters/modeset ]]; then
 else
   warn 'nvidia_drm is not loaded (fine on non-NVIDIA systems)'
 fi
+
+printf '\nUseful logs:\n'
+printf '  %s\n' "$LOG_DIR"
+printf '  Quickshell latest: %s/quickshell-latest.log\n' "$LOG_DIR"
