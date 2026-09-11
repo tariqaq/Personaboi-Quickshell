@@ -41,7 +41,7 @@ sudo apt install -y \
   hyprland xdg-desktop-portal-hyprland hyprland-qtutils \
   git curl wget unzip rsync build-essential cmake \
   kitty nautilus \
-  brightnessctl playerctl wl-clipboard grim slurp pavucontrol \
+  brightnessctl brightness-udev playerctl wl-clipboard grim slurp pavucontrol \
   network-manager-gnome blueman upower polkit-kde-agent-1 \
   xdg-user-dirs xdg-utils libnotify-bin jq \
   qt6-wayland qtwayland5 \
@@ -49,6 +49,18 @@ sudo apt install -y \
   qml6-module-qtmultimedia qml6-module-qt5compat-graphicaleffects \
   qt6-base-dev qt6-declarative-dev libpipewire-0.3-dev libfftw3-dev \
   fonts-noto fonts-noto-color-emoji
+
+# brightnessctl's udev rules grant backlight access to the video group.
+# Add the desktop user once; the new supplementary group becomes active after
+# logout/login, which avoids unsafe setuid or blanket passwordless sudo hacks.
+if ! id -nG "$USER" | tr ' ' '\n' | grep -qx video; then
+  sudo usermod -aG video "$USER"
+  BRIGHTNESS_RELOGIN=1
+else
+  BRIGHTNESS_RELOGIN=0
+fi
+sudo udevadm control --reload-rules || true
+sudo udevadm trigger --subsystem-match=backlight || true
 
 printf '\n[2/7] Installing Quickshell from the DankLinux Ubuntu PPA...\n'
 sudo add-apt-repository -y ppa:avengemedia/danklinux
@@ -142,3 +154,8 @@ Run pboi as your normal user, never with sudo.
 If pboi is not found in the current shell immediately after this fresh install,
 log out and back in once so Ubuntu adds ~/.local/bin to PATH.
 EOF2
+
+if [[ "${BRIGHTNESS_RELOGIN:-0}" == 1 ]]; then
+  printf '\nNOTE: your user was added to the video group for brightness control.\n'
+  printf 'Log out and back in once before using the Personaboi brightness slider without sudo.\n'
+fi
