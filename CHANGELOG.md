@@ -20,6 +20,8 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - When step 3 marks the wallpaper covered, CAVA capture itself is disabled in addition to the wallpaper render surface/ticker being paused. It resumes automatically when the wallpaper becomes visible again.
 - The CAVA Canvas now uses Qt's threaded render strategy so Canvas painting work can be performed away from the main UI thread where supported.
 - Removed the old always-updating CAVA debug text readout from the wallpaper visualizer.
+- Wallpaper optimization step 5 now throttles mouse-parallax state application to the same ~60 Hz wallpaper cadence. Raw pointer motion only updates pending coordinates, preventing the final parallax shader from being dirtied at pointer/display event rates above the wallpaper cap.
+- The two still-required `ShaderEffectSource` textures now render at 80% linear resolution with smooth sampling. The visible wallpaper surface remains full-size, while each offscreen texture processes about 64% of the native pixel count.
 
 ### Notes
 - This change intentionally reuses the proven Timer + hover/interacting pattern already working in `BrightnessCorner.qml` rather than adding a new animation/state system.
@@ -28,6 +30,7 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - Step 3 uses Quickshell 0.3.1 `updatesEnabled` on the wallpaper window. This is specifically intended for static/hidden shell surfaces and prevents visual updates from forcing redraws while the wallpaper is covered.
 - A single tiled window, multiple tiled windows, or a fullscreen/maximized tiled window pauses wallpaper rendering. A normal floating window keeps wallpaper rendering enabled.
 - Step 4 deliberately leaves CAVA at 50 bars. Only repaint cadence, silence handling, covered-wallpaper activity, and Canvas execution strategy were changed.
+- Step 5 deliberately limits resolution reduction to offscreen intermediate textures. The final output, Hyprland compositor, applications, and cursor remain at native display resolution/refresh.
 
 ## v1.4 — 2026-09-11
 
@@ -95,7 +98,6 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - `Super+V` makes a newly-floating window visibly smaller (70% x 72% of the monitor) and centers it; pressing `Super+V` again returns it to normal tiled layout control.
 
 ### Fixed
-- Fixed the Persona power menu using unsupported `loginctl poweroff` / `loginctl reboot` commands.
 - Fixed the Persona power menu using unsupported `loginctl poweroff` / `loginctl reboot` commands.
 
 ## v1.1 — 2026-09-11
