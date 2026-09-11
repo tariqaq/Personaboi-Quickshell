@@ -10,14 +10,22 @@ All notable Personaboi changes are tracked here. Versions describe this Ubuntu 2
 - Persona-styled top-right brightness hotspot. Pushing the pointer into the top-right top edge reveals a small brightness circle; clicking it drops a compact slider panel.
 - Brightness slider writes directly through `brightnessctl set N%`, with a short throttle while dragging. The existing Brightness OSD continues to reflect the changed backlight value.
 - The brightness hotspot follows the same basic reveal/auto-hide behavior as the left-side Persona drawer, but without the ticket blades.
+- Ubuntu `brightness-udev` support and `video` group migration for proper unprivileged backlight control instead of embedding `sudo` or passwordless root access in the UI.
 
 ### Changed
-- `Super+V` now clears internal and client fullscreen/maximize state with `fullscreenstate 0 0` before and after switching to floating mode, then applies an exact logical-pixel size and centers the window.
-- Floating resize calls now use the documented dispatcher argument form directly rather than packaging all resize parameters into one quoted string.
+- `Super+V` clears internal and client fullscreen/maximize state with `fullscreenstate 0 0` before and after switching to floating mode, then applies an exact logical-pixel size and centers the window.
+- `resizeactive` parameters are passed to `hyprctl` as the single dispatcher-argument string expected by the classic CLI, e.g. `"exact 1044 672"`.
+- The brightness corner now keeps its shell surface alive while the reveal circle animates out, so it slides back off-screen instead of being clipped away when the panel collapses.
+
+### Fixed
+- Fixed the brightness slider failing on systems where `brightnessctl` required sudo. Ubuntu 26.04 packages the permission rules separately as `brightness-udev`; existing installs now receive that package and the desktop user is added to the `video` group. A logout/login is required once for new supplementary-group membership to take effect.
+- Fixed the top-right brightness circle disappearing abruptly during auto-hide instead of reversing its reveal animation.
+- Corrected a `Super+V` regression where `resizeactive` arguments had been split into separate shell argv items; the float toggle could still work while the resize command was ignored.
 
 ### Notes
 - The brightness control only occupies a tiny top-right hotspot while hidden, expands only while hovered/open, and does not reserve desktop space.
-- This release keeps the existing unresolved MSI brightness-key issue separate; the new brightness slider works through `brightnessctl` regardless of whether those hardware hotkeys reach Hyprland.
+- This release keeps the existing unresolved MSI brightness-key issue separate; the new brightness slider works through `brightnessctl` once normal backlight permissions are active.
+- Personaboi deliberately does not make `brightnessctl` setuid and does not add passwordless sudo rules for it.
 
 ## v1.3 — 2026-09-11
 
